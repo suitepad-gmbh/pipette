@@ -33,7 +33,7 @@ defmodule Flow.Stage do
   end
 
   def update_ip(%Stage{op: :flow}, ip, new_value), do: %IP{ip | value: new_value}
-  def update_ip(%Stage{op: {:put, key}} = stage, ip, new_value) do
+  def update_ip(%Stage{op: {:put, key}}, ip, new_value) do
     %IP{ip | value: Map.put(ip.value, key, new_value)}
   end
 end

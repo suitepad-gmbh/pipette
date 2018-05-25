@@ -48,7 +48,7 @@ defmodule Flow.Composer do
     {flow, specs}
   end
 
-  def build_stages(%Flow{producer_name: producer_name, stages: stages} = flow) do
+  def build_stages(%Flow{producer_name: producer_name, stages: stages}) do
     Enum.reduce(stages, {[producer_name], []}, fn
       stage, {producer_names, acc} ->
         parallel = 1 # TODO: no parallism for now

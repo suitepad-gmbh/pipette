@@ -26,7 +26,7 @@ defmodule Flow do
         Process.demonitor(monitor)
         ip.value
 
-      {:DOWN, ^monitor, _, _, reason} ->
+      {:DOWN, ^monitor, _, _, _reason} ->
         raise "Consumer went down"
 
       _ ->

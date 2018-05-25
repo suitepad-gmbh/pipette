@@ -20,7 +20,9 @@ defmodule Fbp.MixProject do
   defp deps do
     [
       # Producer and consumer pipelines with back-pressure for Elixir
-      {:gen_stage, "~> 0.13"}
+      {:gen_stage, "~> 0.13"},
+      {:httpoison, "~> 1.0"},
+      {:jason, "~> 1.0"}
     ]
   end
 end
