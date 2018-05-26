@@ -26,7 +26,7 @@ defmodule Flow.BlockTest do
   test "hey, we could do routing this these" do
     pattern = %Pattern{
       blocks: [
-        %Block{id: :generator, type: :producer, stream: Stream.iterate(%IP{value: 1}, &(%IP{&1 | value: &1.value + 1}))},
+        %Block{id: :generator, type: :producer, stream: Stream.iterate(1, &(&1 + 1))},
         %Block{id: :divide_and_conquer, fun: fn
           n when rem(n, 2) == 0 -> {:even, n}
           n when rem(n, 2) != 0 -> {:odd, n}
@@ -56,7 +56,7 @@ defmodule Flow.BlockTest do
   test "and with routing comes neat error handling" do
     pattern = %Pattern{
       blocks: [
-        %Block{id: :generator, type: :producer, stream: Stream.cycle([5, 4, 3, 0, 2, 1]) |> Stream.map(&(%IP{value: &1}))},
+        %Block{id: :generator, type: :producer, stream: Stream.cycle([5, 4, 3, 0, 2, 1])},
         %Block{id: :at_fault, fun: &(1 / &1)}
       ],
       connections: [

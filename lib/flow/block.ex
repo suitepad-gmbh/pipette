@@ -15,7 +15,8 @@ defmodule Flow.Block do
   use GenStage
 
   def child_spec(%Block{type: :producer, stream: stream}) when not is_nil(stream) do
-    arg = {stream, dispatcher: GenStage.BroadcastDispatcher}
+    ip_stream = stream |> Stream.map(&route_ip/1)
+    arg = {ip_stream, dispatcher: GenStage.BroadcastDispatcher}
     %{id: GenStage.Streamer, start: {GenStage, :start_link, [GenStage.Streamer, arg]}}
   end
 
@@ -61,7 +62,7 @@ defmodule Flow.Block do
     fun.(value)
   end
 
-  def perform(%Block{module: module} = block, %IP{value: value} = ip) do
+  def perform(%Block{module: module} = block, %IP{value: value}) do
     function = block.function || :call
     apply(module, function, [value, block.args])
   end
