@@ -5,6 +5,7 @@ defmodule Flow.Block do
     fun: nil,
     module: nil,
     function: nil,
+    stream: nil,
     args: nil,
     inputs: [],
     outputs: []
@@ -12,6 +13,15 @@ defmodule Flow.Block do
   alias Flow.Block
   alias Flow.IP
   use GenStage
+
+  def child_spec(%Block{type: :producer, stream: stream}) when not is_nil(stream) do
+    arg = {stream, dispatcher: GenStage.BroadcastDispatcher}
+    %{id: GenStage.Streamer, start: {GenStage, :start_link, [GenStage.Streamer, arg]}}
+  end
+
+  def child_spec(block) do
+    %{id: __MODULE__, start: {__MODULE__, :start_link, [block]}}
+  end
 
   def start_link(block, opts \\ []) do
     GenStage.start_link(__MODULE__, block, opts)
