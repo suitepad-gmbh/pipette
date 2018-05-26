@@ -18,11 +18,12 @@ defmodule Flow.Block do
   end
 
   def init(block) do
-    {block.type, block}
+    dispatcher = {GenStage.BroadcastDispatcher, []}
+    {block.type, block, dispatcher: dispatcher}
   end
 
   def handle_events([ip], _from, %Block{type: :producer_consumer} = block) do
-    new_ip = perform(block, ip)
+    new_ip = perform(block, ip) |> route_ip(ip)
     {:noreply, [new_ip], block}
   rescue
     error ->
@@ -31,7 +32,8 @@ defmodule Flow.Block do
         message: Exception.message(error),
         block: block
       }
-      %IP{ip | is_error: true, error: wrapped}
+      new_ip = %IP{ip | route: :error, is_error: true, error: wrapped}
+    {:noreply, [new_ip], block}
   end
 
   def handle_events([ip], _from, %Block{type: :consumer} = block) do
@@ -41,37 +43,44 @@ defmodule Flow.Block do
     {:noreply, [], block}
   end
 
+  def perform(%Block{fun: fun} = block, %IP{value: value}) when is_function(fun, 2) do
+    fun.(value, block.args)
+  end
+
+  def perform(%Block{fun: fun}, %IP{value: value}) when is_function(fun, 1) do
+    fun.(value)
+  end
+
+  def perform(%Block{module: module} = block, %IP{value: value} = ip) do
+    function = block.function || :call
+    apply(module, function, [value, block.args])
+  end
+
   def handle_demand(demand, %Block{type: :producer} = block) when demand > 0 do
     ips = produce(block, demand)
     {:noreply, ips, block}
   end
 
-  def perform(%Block{fun: fun} = block, %IP{value: value} = ip) when is_function(fun, 2) do
-    new_value = fun.(value, block.args)
-    %IP{ip | value: new_value}
-  end
-
-  def perform(%Block{fun: fun}, %IP{value: value} = ip) when is_function(fun, 1) do
-    new_value = fun.(value)
-    %IP{ip | value: new_value}
-  end
-
-  def perform(%Block{module: module} = block, %IP{value: value} = ip) do
-    function = block.function || :call
-    new_value = apply(module, function, [value, block.args])
-    %IP{ip | value: new_value}
-  end
-
-  def produce(%Block{fun: fun} = block, demand) when is_function(fun, 2) do
-    Enum.map(1..demand, &(%IP{value: fun.(&1, block.args)}))
-  end
-
-  def produce(%Block{fun: fun}, demand) when is_function(fun, 1) do
-    Enum.map(1..demand, &(%IP{value: fun.(&1)}))
+  def produce(%Block{fun: fun, args: args}, demand) when is_function(fun, 1) do
+    Enum.map(1..demand, fn _ ->
+      fun.(args) |> route_ip()
+    end)
   end
 
   def produce(%Block{fun: fun}, demand) when is_function(fun, 0) do
-    Enum.map(1..demand, fn _ -> %IP{value: fun.()} end)
+    Enum.map(1..demand, fn _ ->
+      fun.() |> route_ip()
+    end)
+  end
+
+  def route_ip(value, ip \\ %IP{})
+
+  def route_ip({route, new_value}, ip) when is_atom(route) do
+    %IP{ip | route: route, value: new_value}
+  end
+
+  def route_ip(new_value, ip) do
+    %IP{ip | route: :ok, value: new_value}
   end
 
 end
