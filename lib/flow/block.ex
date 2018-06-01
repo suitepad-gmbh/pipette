@@ -1,28 +1,15 @@
 defmodule Flow.Block do
 
-  defstruct type: :producer_consumer,
-    id: nil,
+  defstruct id: nil,
     fun: nil,
     module: nil,
-    function: nil,
+    function: :call,
     stream: nil,
-    args: nil,
-    inputs: [],
-    outputs: []
+    args: nil
 
   alias Flow.Block
   alias Flow.IP
   use GenStage
-
-  def child_spec(%Block{type: :producer, stream: stream}) when not is_nil(stream) do
-    ip_stream = stream |> Stream.map(&route_ip/1)
-    arg = {ip_stream, dispatcher: GenStage.BroadcastDispatcher}
-    %{id: GenStage.Streamer, start: {GenStage, :start_link, [GenStage.Streamer, arg]}}
-  end
-
-  def child_spec(block) do
-    %{id: __MODULE__, start: {__MODULE__, :start_link, [block]}}
-  end
 
   def start_link(block, opts \\ []) do
     GenStage.start_link(__MODULE__, block, opts)
@@ -30,11 +17,12 @@ defmodule Flow.Block do
 
   def init(block) do
     dispatcher = {GenStage.BroadcastDispatcher, []}
-    {block.type, block, dispatcher: dispatcher}
+    {:producer_consumer, block, dispatcher: dispatcher}
   end
 
-  def handle_events([ip], _from, %Block{type: :producer_consumer} = block) do
-    new_ip = perform(block, ip) |> route_ip(ip)
+  def handle_events([%IP{value: value} = ip], _from, block) do
+    resp = perform(block, value)
+    new_ip = IP.update(ip, resp)
     {:noreply, [new_ip], block}
   rescue
     error ->
@@ -47,51 +35,24 @@ defmodule Flow.Block do
     {:noreply, [new_ip], block}
   end
 
-  def handle_events([ip], _from, %Block{type: :consumer} = block) do
-    if is_pid(ip.reply_to) do
-      send(ip.reply_to, ip)
-    end
-    {:noreply, [], block}
-  end
-
-  def perform(%Block{fun: fun} = block, %IP{value: value}) when is_function(fun, 2) do
+  def perform(%Block{fun: fun} = block, value) when is_function(fun, 2) do
     fun.(value, block.args)
   end
 
-  def perform(%Block{fun: fun}, %IP{value: value}) when is_function(fun, 1) do
+  def perform(%Block{fun: fun}, value) when is_function(fun, 1) do
     fun.(value)
   end
 
-  def perform(%Block{module: module} = block, %IP{value: value}) do
-    function = block.function || :call
-    apply(module, function, [value, block.args])
+  def perform(%Block{module: module, function: function, args: nil}, value)
+  when is_atom(function)
+  do
+    apply(module, function, [value])
   end
 
-  def handle_demand(demand, %Block{type: :producer} = block) when demand > 0 do
-    ips = produce(block, demand)
-    {:noreply, ips, block}
-  end
-
-  def produce(%Block{fun: fun, args: args}, demand) when is_function(fun, 1) do
-    Enum.map(1..demand, fn _ ->
-      fun.(args) |> route_ip()
-    end)
-  end
-
-  def produce(%Block{fun: fun}, demand) when is_function(fun, 0) do
-    Enum.map(1..demand, fn _ ->
-      fun.() |> route_ip()
-    end)
-  end
-
-  def route_ip(value, ip \\ %IP{})
-
-  def route_ip({route, new_value}, ip) when is_atom(route) do
-    %IP{ip | route: route, value: new_value}
-  end
-
-  def route_ip(new_value, ip) do
-    %IP{ip | route: :ok, value: new_value}
+  def perform(%Block{module: module, function: function, args: args}, value)
+  when is_atom(function)
+  do
+    apply(module, function, [value, args])
   end
 
 end

@@ -19,28 +19,30 @@ defmodule NYCBikeShares do
   end
 
   defmodule GetHTTP do
-    def call(url, _) do
+    def call(url, _ \\ nil) do
       %HTTPoison.Response{body: body} = HTTPoison.get!(url)
       Jason.decode!(body)
     end
   end
 
   def data do
-    %Flow.Pattern{
-      blocks: [
-        %Flow.Block{id: :url_generator, type: :producer, fun: fn -> "http://feeds.citibikenyc.com/stations/stations.json" end},
-        %Flow.Block{id: :fetch, module: GetHTTP},
-        %Flow.Block{id: :station_list, module: Pick, args: "stationBeanList"},
-        %Flow.Block{id: :station_count, fun: fn list -> Enum.count(list) end},
-        %Flow.Block{id: :filter, module: Filter, args: %{key: "stationName", value: "W 52 St & 11 Ave"}}
-      ],
-      connections: [
-        {:filter, :station_list},
+    Flow.Pattern.new(%{
+      blocks: %{
+        IN: %Flow.Block.Producer{fun: fn -> "http://feeds.citibikenyc.com/stations/stations.json" end},
+        fetch: %Flow.Block{module: GetHTTP},
+        station_list: %Flow.Block{module: Pick, args: "stationBeanList"},
+        station_count: %Flow.Block{fun: fn list -> Enum.count(list) end},
+        filter: %Flow.Block{module: Filter, args: %{key: "stationName", value: "W 52 St & 11 Ave"}},
+        station: %Flow.Block{module: List, function: :first}
+      },
+      subscriptions: [
+        {:fetch, :IN},
         {:station_list, :fetch},
-        {:fetch, :url_generator},
+        {:filter, :station_list},
+        {:station, :filter},
         {:station_count, :station_list}
       ]
-    }
+    })
   end
 
 end

@@ -93,7 +93,7 @@ And defines the subscriptions between them:
 
 ```elixir
 %Pattern{
-  connections: [
+  subscriptions: [
     {:add_one, :generator}
   ]
 }
