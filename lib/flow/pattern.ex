@@ -2,19 +2,25 @@ defmodule Flow.Pattern do
 
   defmacro __using__(opts \\ []) do
     quote do
+      def process_name, do: __MODULE__
+
       def blocks, do: %{}
 
       def subscriptions, do: []
 
       def pattern do
-        Flow.Pattern.new(%{id: __MODULE__, blocks: blocks(), subscriptions: subscriptions()})
+        Flow.Pattern.new(%{
+          id: process_name(),
+          blocks: blocks(),
+          subscriptions: subscriptions()
+        })
       end
 
       def start_link(), do: Flow.Pattern.Controller.start_link(__MODULE__.pattern())
 
       def child_spec(), do: Flow.Pattern.Controller.child_spec(__MODULE__.pattern())
 
-      defoverridable [blocks: 0, subscriptions: 0]
+      defoverridable [process_name: 0, blocks: 0, subscriptions: 0]
     end
   end
 
