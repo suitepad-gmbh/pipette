@@ -25,24 +25,23 @@ defmodule NYCBikeShares do
     end
   end
 
-  def data do
-    Flow.Pattern.new(%{
-      blocks: %{
-        IN: %Flow.Block.Producer{fun: fn -> "http://feeds.citibikenyc.com/stations/stations.json" end},
-        fetch: %Flow.Block{module: GetHTTP},
-        station_list: %Flow.Block{module: Pick, args: "stationBeanList"},
-        station_count: %Flow.Block{fun: fn list -> Enum.count(list) end},
-        filter: %Flow.Block{module: Filter, args: %{key: "stationName", value: "W 52 St & 11 Ave"}},
-        station: %Flow.Block{module: List, function: :first}
-      },
-      subscriptions: [
-        {:fetch, :IN},
-        {:station_list, :fetch},
-        {:filter, :station_list},
-        {:station, :filter},
-        {:station_count, :station_list}
-      ]
-    })
-  end
+  use Flow.Pattern
+
+  def blocks, do: %{
+    IN: %Flow.Block.Producer{fun: fn -> "http://feeds.citibikenyc.com/stations/stations.json" end},
+    fetch: %Flow.Block{module: GetHTTP},
+    station_list: %Flow.Block{module: Pick, args: "stationBeanList"},
+    station_count: %Flow.Block{fun: fn list -> Enum.count(list) end},
+    filter: %Flow.Block{module: Filter, args: %{key: "stationName", value: "W 52 St & 11 Ave"}},
+    station: %Flow.Block{module: List, function: :first}
+  }
+
+  def subscriptions, do: [
+    {:fetch, :IN},
+    {:station_list, :fetch},
+    {:filter, :station_list},
+    {:station, :filter},
+    {:station_count, :station_list}
+  ]
 
 end

@@ -6,7 +6,8 @@ defmodule Flow.ClientTest do
   alias Flow.Client
 
   setup_all do
-    pattern = Pattern.new(%{
+    pid = Pattern.new(%{
+      id: __MODULE__,
       blocks: %{
         transform: %Block{fun: fn
           "foo" -> "bar"
@@ -17,8 +18,8 @@ defmodule Flow.ClientTest do
         {:transform, :IN},
         {:OUT, :transform}
       ]
-    }) |> Pattern.start
-    {:ok, _pid} = Client.start_link(pattern, name: :our_client)
+    }) |> Pattern.start_controller
+    {:ok, _pid} = Client.start_link(pid, name: :our_client)
     :ok
   end
 

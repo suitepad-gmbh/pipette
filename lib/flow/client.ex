@@ -1,12 +1,14 @@
 defmodule Flow.Client do
   use GenServer
 
-  def start_link(pattern, opts \\ []) do
-    GenServer.start_link(__MODULE__, pattern, opts)
+  alias Flow.Pattern.Controller
+
+  def start_link(pid_or_name, opts \\ []) do
+    GenServer.start_link(__MODULE__, pid_or_name, opts)
   end
 
-  def init(pattern) do
-    {:ok, pattern}
+  def init(pid_or_name) do
+    {:ok, pid_or_name}
   end
 
   def call(pid, value, timeout \\ :infinity) do
@@ -21,14 +23,15 @@ defmodule Flow.Client do
     GenServer.call(pid, {:pull, stage}, :infinity)
   end
 
-  def handle_call({:push, value}, _from, %Flow.Pattern{stages: %{IN: producer}} = pattern) do
+  def handle_call({:push, value}, _from, pid_or_name) do
+    producer = Controller.get_stage(pid_or_name, :IN)
     ip = %Flow.IP{value: value}
     GenStage.cast(producer, ip)
-    {:reply, :ok, pattern}
+    {:reply, :ok, pid_or_name}
   end
 
-  def handle_call({:pull, stage}, _from, %Flow.Pattern{stages: stages} = pattern) do
-    pid = Map.get(stages, stage)
+  def handle_call({:pull, stage}, _from, pid_or_name) do
+    pid = Controller.get_stage(pid_or_name, stage)
     task = Task.async(fn ->
       GenStage.stream([{pid, max_demand: 1}])
       |> Stream.take(1)
@@ -36,16 +39,17 @@ defmodule Flow.Client do
       |> List.first
     end)
     %Flow.IP{value: value} = Task.await(task, :infinity)
-    {:reply, value, pattern}
+    {:reply, value, pid_or_name}
   end
 
-  def handle_call(value, _from, %Flow.Pattern{stages: %{IN: producer, OUT: consumer}} = pattern) do
+  def handle_call(value, _from, pid_or_name) do
+    [producer, consumer] = Controller.get_stages(pid_or_name, [:IN, :OUT])
     reply_to = self()
     ip = Flow.IP.new(value, reply_to: reply_to)
     monitor = Process.monitor(consumer)
     GenStage.cast(producer, ip)
     value = await_response(reply_to, monitor)
-    {:reply, value, pattern}
+    {:reply, value, pid_or_name}
   end
 
   def await_response(pid, monitor) do
