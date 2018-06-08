@@ -30,4 +30,15 @@ defmodule Flow.IPTest do
     assert %IP{value: :bar, route: :ok, reply_to: ^pid} = IP.update(ip, :bar)
     assert %IP{value: :bar, route: :somewhere, reply_to: ^pid} = IP.update(ip, {:somewhere, :bar})
   end
+
+  test "#set_context puts a key onto the context" do
+    context = %{zig: "zag"}
+    ip = %IP{value: "foo", route: :ok, context: context}
+
+    new_ip = IP.set_context(ip, :meta, "some value")
+    assert new_ip.context == Map.put(context, :meta, "some value")
+
+    new_ip = IP.set_context(ip, :zig, "blubb")
+    assert new_ip.context == %{context | zig: "blubb"}
+  end
 end

@@ -31,7 +31,8 @@ defmodule Flow.Block do
         message: Exception.message(error),
         block: block
       }
-      new_ip = %IP{ip | route: :error, is_error: true, error: wrapped}
+      new_ip = %IP{ip | route: :error}
+               |> IP.set_context(:error, wrapped)
     {:noreply, [new_ip], block}
   end
 

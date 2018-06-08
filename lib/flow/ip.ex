@@ -4,8 +4,7 @@ defmodule Flow.IP do
   defstruct route: :ok,
     value: nil,
     reply_to: nil,
-    is_error: false,
-    error: nil
+    context: %{}
 
   def new(value, opts \\ [])
 
@@ -16,10 +15,17 @@ defmodule Flow.IP do
 
   def new(value, opts), do: new({:ok, value}, opts)
 
-  def update(ip, {route, value}) when is_atom(route) do
+  def update(%IP{} = ip, {route, value}) when is_atom(route) do
     %IP{ip | route: route, value: value}
   end
 
-  def update(ip, value), do: update(ip, {:ok, value})
+  def update(%IP{} = ip, value), do: update(ip, {:ok, value})
+
+  def set_context(%IP{} = ip, key, value)
+  when is_atom(key)
+  do
+    %IP{ip | context: Map.put(ip.context, key, value)}
+  end
+
 end
 
