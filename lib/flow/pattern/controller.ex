@@ -1,6 +1,8 @@
 defmodule Flow.Pattern.Controller do
   use GenServer
 
+  require Logger
+
   alias Flow.Pattern
 
   def child_spec(pattern) do
@@ -60,10 +62,19 @@ defmodule Flow.Pattern.Controller do
   end
 
   def subscribe(stages, {from, {to, route}}) do
-    {:ok, _ref} = GenStage.sync_subscribe(stages[from],
-                                          to: stages[to],
-                                          selector: &(&1.route == route),
-                                          max_demand: 1)
+    case {stages[from], stages[to]} do
+      {nil, nil} ->
+        Logger.error("'#{from}' and '#{to}' of subscription #{from} -> {#{to}, #{route}} are not defined")
+      {nil, _} ->
+        Logger.error("'#{from}' of subscription #{from} -> {#{to}, #{route}} is not defined")
+      {_, nil} ->
+        Logger.error("'#{to}' of subscription #{from} -> {#{to}, #{route}} is not defined")
+      {from_stage, to_stage} ->
+        {:ok, _ref} = GenStage.sync_subscribe(from_stage,
+                                              to: to_stage,
+                                              selector: &(&1.route == route),
+                                              max_demand: 1)
+    end
   end
 
 end
