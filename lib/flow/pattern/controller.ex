@@ -6,7 +6,7 @@ defmodule Flow.Pattern.Controller do
   def child_spec(pattern) do
     %{
       id: pattern.id,
-      start: {__MODULE__, :start_link, [pattern, name: pattern.id]}
+      start: {__MODULE__, :start_link, [pattern, [name: pattern.id]]}
     }
   end
 
@@ -67,4 +67,3 @@ defmodule Flow.Pattern.Controller do
   end
 
 end
-
