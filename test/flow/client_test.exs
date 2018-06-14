@@ -6,20 +6,25 @@ defmodule Flow.ClientTest do
   alias Flow.Client
 
   setup_all do
-    pid = Pattern.new(%{
-      id: __MODULE__,
-      blocks: %{
-        transform: %Block{fun: fn
-          "foo" -> "bar"
-          "zig" -> "zag"
-          fun when is_function(fun) -> fun.()
-        end}
-      },
-      subscriptions: [
-        {:transform, :IN},
-        {:OUT, :transform}
-      ]
-    }) |> Pattern.start_controller
+    pid =
+      Pattern.new(%{
+        id: __MODULE__,
+        blocks: %{
+          transform: %Block{
+            fun: fn
+              "foo" -> "bar"
+              "zig" -> "zag"
+              fun when is_function(fun) -> fun.()
+            end
+          }
+        },
+        subscriptions: [
+          {:transform, :IN},
+          {:OUT, :transform}
+        ]
+      })
+      |> Pattern.start_controller()
+
     {:ok, _pid} = Client.start_link(pid, name: :our_client)
     :ok
   end
@@ -42,14 +47,13 @@ defmodule Flow.ClientTest do
     #   AND messages that are tagged uniquely with that :call request.
     #
     assert {
-      :error, %Client.TimeoutError{}
-    } = Client.call(:our_client, fn -> :timer.sleep(1000) end, 50)
+             :error,
+             %Client.TimeoutError{}
+           } = Client.call(:our_client, fn -> :timer.sleep(1000) end, 50)
   end
 
   # test "#pull demands a messages from OUT of the pattern" do
   #   :ok = Client.push(:our_client, "zig")
   #   assert "zag" == Client.pull(:our_client, :OUT)
   # end
-
 end
-

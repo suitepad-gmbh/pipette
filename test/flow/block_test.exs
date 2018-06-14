@@ -11,9 +11,9 @@ defmodule Flow.BlockTest do
   alias Flow.BlockTest.Test
 
   test "#perform calls into a module and the given function" do
-    assert Block.perform(%Block{module: List, function: :first}, [1, 2, 3]) == 1
-    assert Block.perform(%Block{module: Test, function: :add, args: 1}, 2) == 3
-    assert Block.perform(%Block{module: Test, function: :add, args: nil}, 2) == 2
+    assert Block.perform(%Block{module: List, function: :first}, %Flow.IP{value: [1, 2, 3]}) == 1
+    assert Block.perform(%Block{module: Test, function: :add, args: 1}, %Flow.IP{value: 2}) == 3
+    assert Block.perform(%Block{module: Test, function: :add, args: nil}, %Flow.IP{value: 2}) == 2
   end
 
   # test "hey, we could do routing this these" do
@@ -78,4 +78,3 @@ defmodule Flow.BlockTest do
   #   ] = errors
   # end
 end
-

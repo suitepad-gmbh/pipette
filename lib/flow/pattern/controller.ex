@@ -19,12 +19,13 @@ defmodule Flow.Pattern.Controller do
 
   def init(pattern) do
     stages = start_blocks(pattern)
-    establish(stages, pattern)
 
     state = %{
       pattern: pattern,
       stages: stages
     }
+
+    establish(state)
     {:ok, state}
   end
 
@@ -38,12 +39,14 @@ defmodule Flow.Pattern.Controller do
   end
 
   def handle_call({:get_stages, block_ids}, _from, %{stages: stages} = state) do
-    pids = Map.take(stages, block_ids)
-           |> Map.values()
+    pids =
+      Map.take(stages, block_ids)
+      |> Map.values()
+
     {:reply, pids, state}
   end
 
-  def start_blocks(%Pattern{blocks: blocks}) do
+  defp start_blocks(%Pattern{blocks: blocks}) do
     Enum.reduce(blocks, %{}, fn {block_id, block}, acc ->
       {:ok, pid} = block.__struct__.start_link(block)
       Process.link(pid)
@@ -51,30 +54,58 @@ defmodule Flow.Pattern.Controller do
     end)
   end
 
-  def establish(stages, %Pattern{subscriptions: subscriptions}) do
+  defp establish(%{pattern: %Pattern{subscriptions: subscriptions}} = state) do
     for subscription <- subscriptions do
-      subscribe(stages, subscription)
+      subscribe(state, subscription)
     end
   end
 
-  def subscribe(stages, {from, to}) when is_atom(to) do
-    subscribe(stages, {from, {to, :ok}})
+  defp subscribe(state, {from, to}) when is_atom(to) do
+    subscribe(state, {from, {to, :ok}})
   end
 
-  def subscribe(stages, {from, {to, route}}) do
-    case {stages[from], stages[to]} do
-      {nil, nil} ->
-        Logger.error("'#{from}' and '#{to}' of subscription #{from} -> {#{to}, #{route}} are not defined")
-      {nil, _} ->
-        Logger.error("'#{from}' of subscription #{from} -> {#{to}, #{route}} is not defined")
-      {_, nil} ->
-        Logger.error("'#{to}' of subscription #{from} -> {#{to}, #{route}} is not defined")
-      {from_stage, to_stage} ->
-        {:ok, _ref} = GenStage.sync_subscribe(from_stage,
-                                              to: to_stage,
-                                              selector: &(&1.route == route),
-                                              max_demand: 1)
+  defp subscribe(%{stages: stages, pattern: %Pattern{blocks: blocks}}, {from, {:*, route}}) do
+    from_stage = stages[from]
+
+    for {stage_name, to_stage} when stage_name != from <- stages do
+      module = blocks[stage_name].__struct__
+
+      case module.stage_type() do
+        stage_type when stage_type in [:producer, :producer_consumer] ->
+          subscribe_to({from, from_stage}, {stage_name, to_stage}, route)
+
+        _ ->
+          nil
+      end
     end
   end
 
+  defp subscribe(%{stages: stages}, {from, {to, route}}) do
+    subscribe_to({from, stages[from]}, {to, stages[to]}, route)
+  end
+
+  defp subscribe_to({from, nil}, {to, nil}, route) do
+    Logger.error(
+      "'#{from}' and '#{to}' of subscription #{from} -> {#{to}, #{route}} are not defined"
+    )
+  end
+
+  defp subscribe_to({from, nil}, {to, _pid}, route) do
+    Logger.error("'#{from}' of subscription #{from} -> {#{to}, #{route}} is not defined")
+  end
+
+  defp subscribe_to({from, _pid}, {to, nil}, route) do
+    Logger.error("'#{to}' of subscription #{from} -> {#{to}, #{route}} is not defined")
+  end
+
+  defp subscribe_to({_from, from_stage}, {_to, to_stage}, route)
+       when is_pid(from_stage) and is_pid(to_stage) do
+    {:ok, _ref} =
+      GenStage.sync_subscribe(
+        from_stage,
+        to: to_stage,
+        selector: &(&1.route == route || route == :*),
+        max_demand: 1
+      )
+  end
 end
