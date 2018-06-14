@@ -1,5 +1,4 @@
 defmodule Flow.Block do
-
   require Logger
 
   defstruct id: nil,
@@ -29,12 +28,14 @@ defmodule Flow.Block do
   rescue
     error ->
       message = Exception.message(error)
-      Logger.debug("error in #{inspect block}: #{message}")
+      Logger.debug("error in #{inspect(block)}: #{message}")
+
       wrapped = %{
         error: error,
         message: message,
         block: block
       }
+
       %IP{ip | route: :error}
       |> IP.set_context(:error, wrapped)
   end
@@ -57,4 +58,3 @@ defmodule Flow.Block do
     apply(module, function, [value, args])
   end
 end
-

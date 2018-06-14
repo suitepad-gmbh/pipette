@@ -10,7 +10,10 @@ defmodule Flow.IPTest do
   test "#new takes a conventional tuple and returns an IP struct with a route" do
     assert %IP{value: :foo, route: :ok} == IP.new({:ok, :foo})
     assert %IP{value: :foo, route: :bar} == IP.new({:bar, :foo})
-    assert %IP{value: "something went wrong", route: :error} == IP.new({:error, "something went wrong"})
+
+    assert %IP{value: "something went wrong", route: :error} ==
+             IP.new({:error, "something went wrong"})
+
     assert %IP{value: {:bar, :foo}, route: :ok} == IP.new({:ok, {:bar, :foo}})
   end
 

@@ -26,4 +26,3 @@ defmodule Fbp.MixProject do
     ]
   end
 end
-

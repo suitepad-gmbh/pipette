@@ -1,9 +1,9 @@
 defmodule ModuleFlows do
   use Flow.Macro
 
-  flow :zero
-  flow AddTen
-  flow AddTwoFlow
+  flow(:zero)
+  flow(AddTen)
+  flow(AddTwoFlow)
 
   def zero(state, _) do
     %{state | n: 0}
@@ -18,12 +18,11 @@ defmodule ModuleFlows do
   defmodule AddTwoFlow do
     use Flow.Macro
 
-    flow :plus_one
-    flow :plus_one
+    flow(:plus_one)
+    flow(:plus_one)
 
     def plus(%{n: n} = state, _) do
       %{state | n: n + 1}
     end
   end
 end
-

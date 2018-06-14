@@ -15,35 +15,43 @@ defmodule Flow.PatternTest do
       {:via, Registry, {Registry.ViaTest, :registered}}
     end
 
-    def blocks, do: %{
-      add_one: %Block{fun: &(&1 + 1)}
-    }
+    def blocks,
+      do: %{
+        add_one: %Block{fun: &(&1 + 1)}
+      }
 
-    def subscriptions, do: [
-      {:add_one, :IN},
-      {:OUT, :add_one}
-    ]
+    def subscriptions,
+      do: [
+        {:add_one, :IN},
+        {:OUT, :add_one}
+      ]
   end
 
   defmodule FooToBarPattern do
     use Flow.Pattern
 
-    def blocks, do: %{
-      foo_to_bar: %Block{fun: fn
-        "foo" -> "bar"
-        other -> other
-      end},
-      zig_to_zag: %Block{fun: fn
-        "zig" -> "zag"
-        other -> other
-      end}
-    }
+    def blocks,
+      do: %{
+        foo_to_bar: %Block{
+          fun: fn
+            "foo" -> "bar"
+            other -> other
+          end
+        },
+        zig_to_zag: %Block{
+          fun: fn
+            "zig" -> "zag"
+            other -> other
+          end
+        }
+      }
 
-    def subscriptions, do: [
-      {:foo_to_bar, :IN},
-      {:zig_to_zag, :foo_to_bar},
-      {:OUT, :zig_to_zag}
-    ]
+    def subscriptions,
+      do: [
+        {:foo_to_bar, :IN},
+        {:zig_to_zag, :foo_to_bar},
+        {:OUT, :zig_to_zag}
+      ]
   end
 
   test "#start_link starts a controlled pattern" do
@@ -60,8 +68,9 @@ defmodule Flow.PatternTest do
         assert Process.alive?(pid) == false
         assert Process.alive?(stage1) == false
         assert Process.alive?(stage2) == false
-    after 1000 ->
-      assert false
+    after
+      1000 ->
+        assert false
     end
   end
 
@@ -80,6 +89,4 @@ defmodule Flow.PatternTest do
   test "#process_name returns the overwrite if given" do
     assert {:via, Registry, {Registry.ViaTest, :registered}} == RegisteredPattern.process_name()
   end
-
 end
-

@@ -2,9 +2,9 @@ defmodule Flow.IP do
   alias Flow.IP
 
   defstruct route: :ok,
-    value: nil,
-    reply_to: nil,
-    context: %{}
+            value: nil,
+            reply_to: nil,
+            context: %{}
 
   def new(value, opts \\ [])
 
@@ -22,10 +22,7 @@ defmodule Flow.IP do
   def update(%IP{} = ip, value), do: update(ip, {:ok, value})
 
   def set_context(%IP{} = ip, key, value)
-  when is_atom(key)
-  do
+      when is_atom(key) do
     %IP{ip | context: Map.put(ip.context, key, value)}
   end
-
 end
-

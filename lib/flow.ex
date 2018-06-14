@@ -1,10 +1,9 @@
 defmodule Flow do
-
   defstruct name: nil,
-    stages: [],
-    supervisor_pid: nil,
-    producer_name: nil,
-    consumer_name: nil
+            stages: [],
+            supervisor_pid: nil,
+            producer_name: nil,
+            consumer_name: nil
 
   def call(%Flow{producer_name: producer_name, consumer_name: consumer_name}, value) do
     pid = self()
@@ -33,6 +32,4 @@ defmodule Flow do
         await_response(pid, monitor)
     end
   end
-
 end
-

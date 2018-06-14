@@ -1,5 +1,4 @@
 defmodule Flow.Pattern do
-
   defmacro __using__(_opts \\ []) do
     quote do
       def process_name, do: __MODULE__
@@ -20,7 +19,7 @@ defmodule Flow.Pattern do
 
       def child_spec(_opts \\ []), do: Flow.Pattern.Controller.child_spec(__MODULE__.pattern())
 
-      defoverridable [process_name: 0, blocks: 0, subscriptions: 0]
+      defoverridable process_name: 0, blocks: 0, subscriptions: 0
     end
   end
 
@@ -28,13 +27,14 @@ defmodule Flow.Pattern do
   alias Flow.Block
 
   defstruct id: nil,
-    blocks: %{},
-    subscriptions: []
+            blocks: %{},
+            subscriptions: []
 
   def new(%{id: id, blocks: blocks, subscriptions: subscriptions}) do
-    blocks = blocks
-             |> Map.put(:IN, blocks[:IN] || %Block.PushProducer{})
-             |> Map.put(:OUT, blocks[:OUT] || %Block.Consumer{})
+    blocks =
+      blocks
+      |> Map.put(:IN, blocks[:IN] || %Block.PushProducer{})
+      |> Map.put(:OUT, blocks[:OUT] || %Block.Consumer{})
 
     %Pattern{
       id: id,
@@ -47,5 +47,4 @@ defmodule Flow.Pattern do
     {:ok, pid} = Pattern.Controller.start_link(pattern)
     pid
   end
-
 end

@@ -20,8 +20,6 @@ defmodule Flow.Block.ProducerTest do
   end
 
   test "#produce takes an anonymous function with arguments" do
-    assert Producer.produce(%Producer{fun: fn x -> x+1 end, args: 1}) == 2
+    assert Producer.produce(%Producer{fun: fn x -> x + 1 end, args: 1}) == 2
   end
-
 end
-

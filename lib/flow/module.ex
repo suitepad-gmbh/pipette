@@ -1,5 +1,4 @@
 defmodule Flow.Module do
-
   alias Flow.Stage
 
   defmacro flow(atom) do
@@ -19,7 +18,7 @@ defmodule Flow.Module do
       import Flow.Module
       @before_compile Flow.Module
 
-      Module.register_attribute __MODULE__, :stages, accumulate: true
+      Module.register_attribute(__MODULE__, :stages, accumulate: true)
     end
   end
 
@@ -30,5 +29,4 @@ defmodule Flow.Module do
       end
     end
   end
-
 end

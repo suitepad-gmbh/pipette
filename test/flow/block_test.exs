@@ -19,18 +19,20 @@ defmodule Flow.BlockTest do
   end
 
   test "handles cast, executes the block and continues the pattern from there" do
-    client = Pattern.new(%{
-      id: __MODULE__,
-      blocks: %{
-        add1: %Block{module: Test, function: :add, args: 1},
-        add2: %Block{module: Test, function: :add, args: 2}
-      },
-      subscriptions: [
-        {:add2, :add1}
-      ]
-    })
-    |> Pattern.start_controller
-    |> Client.start
+    client =
+      Pattern.new(%{
+        id: __MODULE__,
+        blocks: %{
+          add1: %Block{module: Test, function: :add, args: 1},
+          add2: %Block{module: Test, function: :add, args: 2}
+        },
+        subscriptions: [
+          {:add2, :add1}
+        ]
+      })
+      |> Pattern.start_controller()
+      |> Client.start()
+
     task = Task.async(fn -> Client.pull(client, :add2) end)
     Client.push(client, 0, to: :add1)
     assert Task.await(task) == 3

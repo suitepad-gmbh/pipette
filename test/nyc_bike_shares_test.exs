@@ -12,6 +12,4 @@ defmodule NYCBikeSharesTest do
     %{"stationName" => _} = Flow.Client.pull(client, :station)
     assert is_number(Flow.Client.pull(client, :station_count))
   end
-
 end
-
