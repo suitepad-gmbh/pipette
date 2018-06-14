@@ -9,11 +9,31 @@ defmodule Flow.BlockTest do
 
   alias Flow.Block
   alias Flow.BlockTest.Test
+  alias Flow.Pattern
+  alias Flow.Client
 
   test "#perform calls into a module and the given function" do
     assert Block.perform(%Block{module: List, function: :first}, [1, 2, 3]) == 1
     assert Block.perform(%Block{module: Test, function: :add, args: 1}, 2) == 3
     assert Block.perform(%Block{module: Test, function: :add, args: nil}, 2) == 2
+  end
+
+  test "handles cast, executes the block and continues the pattern from there" do
+    client = Pattern.new(%{
+      id: __MODULE__,
+      blocks: %{
+        add1: %Block{module: Test, function: :add, args: 1},
+        add2: %Block{module: Test, function: :add, args: 2}
+      },
+      subscriptions: [
+        {:add2, :add1}
+      ]
+    })
+    |> Pattern.start_controller
+    |> Client.start
+    task = Task.async(fn -> Client.pull(client, :add2) end)
+    Client.push(client, 0, to: :add1)
+    assert Task.await(task) == 3
   end
 
   # test "hey, we could do routing this these" do
@@ -78,4 +98,3 @@ defmodule Flow.BlockTest do
   #   ] = errors
   # end
 end
-

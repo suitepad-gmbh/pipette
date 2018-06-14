@@ -20,10 +20,19 @@ defmodule Flow.Block do
     {:producer_consumer, block, dispatcher: dispatcher}
   end
 
-  def handle_events([%IP{value: value} = ip], _from, block) do
-    resp = perform(block, value)
-    new_ip = IP.update(ip, resp)
+  def handle_events([%IP{} = ip], _from, block) do
+    new_ip = process_ip(ip, block)
     {:noreply, [new_ip], block}
+  end
+
+  def handle_cast(%IP{} = ip, block) do
+    new_ip = process_ip(ip, block)
+    {:noreply, [new_ip], block}
+  end
+
+  def process_ip(%IP{value: value} = ip, block) do
+    resp = perform(block, value)
+    IP.update(ip, resp)
   rescue
     error ->
       wrapped = %{
@@ -31,9 +40,8 @@ defmodule Flow.Block do
         message: Exception.message(error),
         block: block
       }
-      new_ip = %IP{ip | route: :error}
-               |> IP.set_context(:error, wrapped)
-    {:noreply, [new_ip], block}
+      %IP{ip | route: :error}
+      |> IP.set_context(:error, wrapped)
   end
 
   def perform(%Block{fun: fun} = block, value) when is_function(fun, 2) do
@@ -57,4 +65,3 @@ defmodule Flow.Block do
   end
 
 end
-
