@@ -1,4 +1,7 @@
 defmodule Flow.Block do
+
+  require Logger
+
   defstruct id: nil,
             fun: nil,
             module: nil,
@@ -11,22 +14,29 @@ defmodule Flow.Block do
   use Flow.Stage, stage_type: :producer_consumer
 
   def handle_events([%IP{} = ip], _from, block) do
-    resp = perform(block, ip)
-    new_ip = IP.update(ip, resp)
+    new_ip = process_ip(ip, block)
     {:noreply, [new_ip], block}
+  end
+
+  def handle_cast(%IP{} = ip, block) do
+    new_ip = process_ip(ip, block)
+    {:noreply, [new_ip], block}
+  end
+
+  def process_ip(%IP{} = ip, block) do
+    resp = perform(block, ip)
+    IP.update(ip, resp)
   rescue
     error ->
+      message = Exception.message(error)
+      Logger.debug("error in #{inspect block}: #{message}")
       wrapped = %{
         error: error,
-        message: Exception.message(error),
+        message: message,
         block: block
       }
-
-      new_ip =
-        %IP{ip | route: :error}
-        |> IP.set_context(:error, wrapped)
-
-      {:noreply, [new_ip], block}
+      %IP{ip | route: :error}
+      |> IP.set_context(:error, wrapped)
   end
 
   def perform(%Block{fun: fun} = block, %IP{value: value}) when is_function(fun, 2) do
@@ -47,3 +57,4 @@ defmodule Flow.Block do
     apply(module, function, [value, args])
   end
 end
+

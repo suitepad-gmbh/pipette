@@ -12,6 +12,7 @@ defmodule Flow.Client do
   end
 
   alias Flow.Pattern.Controller
+  alias Flow.IP
 
   def start(pid_or_name, opts \\ []) do
     {:ok, pid} = start_link(pid_or_name, opts)
@@ -51,17 +52,19 @@ defmodule Flow.Client do
     end
   end
 
-  def push(pid, value) do
-    GenServer.call(pid, {:push, value})
+  def push(pid, value, opts \\ []) do
+    GenServer.call(pid, {:push, value, opts})
   end
 
   def pull(pid, stage) do
     GenServer.call(pid, {:pull, stage}, :infinity)
   end
 
-  def handle_call({:push, value}, _from, pid_or_name) do
-    producer = Controller.get_stage(pid_or_name, :IN)
-    ip = Flow.IP.new(value)
+  def handle_call({:push, value, opts}, _from, pid_or_name) do
+    stage = opts[:to] || :IN
+    producer = Controller.get_stage(pid_or_name, stage)
+    ip = IP.new(value)
+
     GenStage.cast(producer, ip)
     {:reply, :ok, pid_or_name}
   end
@@ -84,7 +87,7 @@ defmodule Flow.Client do
   def handle_call({:call, value, timeout}, _from, pid_or_name) do
     [producer, consumer] = Controller.get_stages(pid_or_name, [:IN, :OUT])
     reply_to = self()
-    ip = Flow.IP.new(value, reply_to: reply_to)
+    ip = IP.new(value, reply_to: reply_to)
     monitor = Process.monitor(consumer)
     GenStage.cast(producer, ip)
     resp = await_response(reply_to, monitor, timeout)
@@ -93,7 +96,7 @@ defmodule Flow.Client do
 
   def await_response(pid, monitor, timeout) do
     receive do
-      %Flow.IP{value: value, reply_to: ^pid} ->
+      %IP{value: value, reply_to: ^pid} ->
         Process.demonitor(monitor)
         {:ok, value}
 
