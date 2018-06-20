@@ -46,6 +46,17 @@ defmodule Flow.Pattern.Controller do
     {:reply, pids, state}
   end
 
+  def handle_call({:get_block, stage_pid}, _from, %{stages: stages, pattern: pattern} = state) do
+    case Enum.find(stages, fn {key, value} -> value == stage_pid end) do
+      {block_id, _} ->
+        block = Map.get(pattern.blocks, block_id)
+        {:reply, {block_id, block}, state}
+
+      _ ->
+        {:reply, nil, state}
+    end
+  end
+
   defp start_blocks(%Pattern{blocks: blocks}) do
     Enum.reduce(blocks, %{}, fn {block_id, block}, acc ->
       {:ok, pid} = block.__struct__.start_link(block)
