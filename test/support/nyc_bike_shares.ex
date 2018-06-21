@@ -24,18 +24,19 @@ defmodule NYCBikeShares do
     end
   end
 
-  use Flow.Pattern
+  use Pipette.Recipe
+  alias Pipette.Stage
 
-  def blocks,
+  def stages,
     do: %{
-      IN: %Flow.Block.Producer{
+      IN: %Stage.Producer{
         fun: fn -> "http://feeds.citibikenyc.com/stations/stations.json" end
       },
-      fetch: %Flow.Block{module: GetHTTP},
-      station_list: %Flow.Block{module: Pick, args: "stationBeanList"},
-      station_count: %Flow.Block{fun: fn list -> Enum.count(list) end},
-      filter: %Flow.Block{module: Filter, args: %{key: "stationName", value: "W 52 St & 11 Ave"}},
-      station: %Flow.Block{module: List, function: :first}
+      fetch: %Stage{module: GetHTTP},
+      station_list: %Stage{module: Pick, args: "stationBeanList"},
+      station_count: %Stage{fun: fn list -> Enum.count(list) end},
+      filter: %Stage{module: Filter, args: %{key: "stationName", value: "W 52 St & 11 Ave"}},
+      station: %Stage{module: List, function: :first}
     }
 
   def subscriptions,

@@ -1,23 +1,23 @@
 # Flow-based programming
 
-This repository is the beginning of a Flow-based programming engine for Elixir.
+This repository is the beginning of a Pipette-based programming engine for Elixir.
 
-## IPs, Blocks and Patterns
+## IPs, Stages and Recipes
 
 #### Introduction
 
-The latest experiment shows a serializable data structure, a `%Pattern{}` that contains
-`%Block{}`-type elements.
+The latest experiment shows a serializable data structure, a `%Recipe{}` that contains
+`%Stage{}`-type elements.
 
-This can be used to either programmatically create patterns and link blocks together.
-The main work the `Pattern` module takes over is to link the labels from blocks to `GenStage` process ids.
+This can be used to either programmatically create recipes and link stages together.
+The main work the `Recipe` module takes over is to link the labels from stages to `GenStage` process ids.
 
 Then it is also capable to link these stages together, by specifying the subscriptions that make up
 the network that these stages are connected to each.
 
 Utilizing `GenStage.BroadcastDispatcher` we can subscribe multiple stages to the same output.
 By utilizing the `:selector` option, a routing concept could be implemented.
-Thus it is possible to divert flows into multiple outputs with a simple `{:route, value}` response.
+Thus it is possible to divert Pipettes into multiple outputs with a simple `{:route, value}` response.
 
 By default simple `value`-term responses are just mapped to `{:ok, ip}`. Errors during execution
 are mapped to `{:error, error_ip}`. This simple routing mechanism makes error handling a part of the system.
@@ -35,19 +35,19 @@ The above concept can be utilized to realize various types of data processing ne
 
 ### IP
 
-An IP is the internal message envelope, in Flow-based programming lingo an **information packet**.
+An IP is the internal message envelope, in Pipette-based programming lingo an **information packet**.
 The IP holds a value, routing information and is capable of wrapping errors.
 
-### Block
+### Stage
 
 A block contains all information to build a stage.
-Blocks can describe all common `GenStage` types, like producers, streams,
+Stages can describe all common `GenStage` types, like producers, streams,
 producer/consumers and consumer stages.
 
 A block can be labeled:
 
 ```elixir
-%Block{id: :label}
+%Stage{id: :label}
 ```
 
 Its functionality can be passed in three ways:
@@ -55,36 +55,36 @@ Its functionality can be passed in three ways:
 * An anonymous function
 
   ```elixir
-  %Block{fun: &(&1 + 1)}
+  %Stage{fun: &(&1 + 1)}
   ```
 
 * A module/function
 
   ```elixir
-  %Block{module: Map, function: :values}
+  %Stage{module: Map, function: :values}
   ```
 
 * A stream (producer only)
 
   ```elixir
-  %Block{type: :producer, stream: Stream.cycle(1..5)}
+  %Stage{type: :producer, stream: Stream.cycle(1..5)}
   ```
 
-### Pattern
+### Recipe
 
 This is the simplest I could come up with, to build a graph of multiple labeled stages.
-A pattern combines blocks into a graph of `GenStage`s.
+A recipe combines stages into a graph of `GenStage`s.
 
-Once defined, a pattern can be used to start/establish all stages.
+Once defined, a recipe can be used to start/establish all stages.
 It does so by providing a dynamic supervisor that starts each stage and monitors it.
 
-It holds blocks:
+It holds stages:
 
 ```elixir
-%Pattern{
-  blocks: [
-    %Block{id: :generator, type: :producer, stream: Stream.cycle(1..10)},
-    %Block{id: :add_one, fun: &(&1 + 1)}
+%Recipe{
+  stages: [
+    %Stage{id: :generator, type: :producer, stream: Stream.cycle(1..10)},
+    %Stage{id: :add_one, fun: &(&1 + 1)}
   ]
 }
 ```
@@ -92,7 +92,7 @@ It holds blocks:
 And defines the subscriptions between them:
 
 ```elixir
-%Pattern{
+%Recipe{
   subscriptions: [
     {:add_one, :generator}
   ]
@@ -115,12 +115,10 @@ $ mix deps.get
 - [ ] Test un-evenly routed streams
 - [ ] Test minimal/maximal buffer sizes, congestion
 - [ ] Parallel execution of single stages
-- [ ] Provide an implementation to contextualise Patterns and Block execution
+- [ ] Provide an implementation to contextualise Recipes and Stage execution
 - [ ] Show that networks can be connected with each other
-- [ ] Provide convenience entry points similar to `Flowex.Client`
+- [ ] Provide convenience entry points similar to `Pipetteex.Client`
 - [ ] Test supervisor/crash behaviour
 - [ ] Implemented stage re-connection after fatal stage crashes
 - [ ] Harden provided interface from bad inputs
-- [ ] Re-integration into Elixir `Flow`
-
-
+- [ ] Re-integration into Elixir `Pipette`
