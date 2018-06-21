@@ -1,6 +1,8 @@
 defmodule Pipette.IP do
   alias Pipette.IP
 
+  @type t :: %IP{value: any(), reply_to: pid(), route: atom(), context: map(), ref: reference()}
+
   defstruct route: :ok,
             ref: nil,
             value: nil,

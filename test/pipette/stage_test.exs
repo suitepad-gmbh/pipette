@@ -2,8 +2,8 @@ defmodule Pipette.StageTest do
   use ExUnit.Case
 
   defmodule Test do
-    def add(value, args \\ 0) do
-      value + args
+    def add(value, number: number) do
+      value + number
     end
   end
 
@@ -12,19 +12,13 @@ defmodule Pipette.StageTest do
   alias Pipette.Recipe
   alias Pipette.Client
 
-  test "#perform calls into a module and the given function" do
-    assert Stage.perform(%Stage{module: List, function: :first}, %Pipette.IP{value: [1, 2, 3]}) == 1
-    assert Stage.perform(%Stage{module: Test, function: :add, args: 1}, %Pipette.IP{value: 2}) == 3
-    assert Stage.perform(%Stage{module: Test, function: :add, args: nil}, %Pipette.IP{value: 2}) == 2
-  end
-
   test "handles cast, executes the block and continues the recipe from there" do
     client =
       Recipe.new(%{
         id: __MODULE__,
         stages: %{
-          add1: %Stage{module: Test, function: :add, args: 1},
-          add2: %Stage{module: Test, function: :add, args: 2}
+          add1: %Stage{handler: {Test, :add, number: 1}},
+          add2: %Stage{handler: {Test, :add, number: 2}}
         },
         subscriptions: [
           {:add2, :add1}

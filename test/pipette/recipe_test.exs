@@ -17,7 +17,7 @@ defmodule Pipette.RecipeTest do
 
     def stages,
       do: %{
-        add_one: %Stage{fun: &(&1 + 1)}
+        add_one: %Stage{handler: &(&1 + 1)}
       }
 
     def subscriptions,
@@ -33,13 +33,13 @@ defmodule Pipette.RecipeTest do
     def stages,
       do: %{
         foo_to_bar: %Stage{
-          fun: fn
+          handler: fn
             "foo" -> "bar"
             other -> other
           end
         },
         zig_to_zag: %Stage{
-          fun: fn
+          handler: fn
             "zig" -> "zag"
             other -> other
           end

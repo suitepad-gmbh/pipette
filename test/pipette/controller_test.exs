@@ -11,7 +11,7 @@ defmodule Pipette.ControllerTest do
       Recipe.new(%{
         id: __MODULE__,
         stages: %{
-          foo: %Stage{fun: fn value -> {value, "message"} end}
+          foo: %Stage{handler: fn value -> {value, "message"} end}
         },
         subscriptions: [
           {:foo, :IN},
@@ -32,9 +32,9 @@ defmodule Pipette.ControllerTest do
         id: __MODULE__,
         stages: %{
           IN: %Stage.PushProducer{},
-          foo: %Stage{fun: fn _ -> "foo" end},
-          bar: %Stage{fun: fn _ -> "bar" end},
-          pass: %Stage{fun: fn v -> v end}
+          foo: %Stage{handler: fn _ -> "foo" end},
+          bar: %Stage{handler: fn _ -> "bar" end},
+          pass: %Stage{handler: fn v -> v end}
         },
         subscriptions: [
           {:foo, :IN},
@@ -70,8 +70,8 @@ defmodule Pipette.ControllerTest do
         id: __MODULE__,
         stages: %{
           IN: %Stage.PushProducer{},
-          foo: %Stage{fun: fn _ -> "foo" end},
-          route: %Stage{fun: fn route -> {route, "route"} end},
+          foo: %Stage{handler: fn _ -> "foo" end},
+          route: %Stage{handler: fn route -> {route, "route"} end},
           pass: %Stage.Passthrough{}
         },
         subscriptions: [
@@ -108,8 +108,8 @@ defmodule Pipette.ControllerTest do
         id: __MODULE__,
         stages: %{
           IN: %Stage.PushProducer{},
-          foo: %Stage{fun: fn _ -> "foo" end},
-          route: %Stage{fun: fn route -> {route, "route"} end},
+          foo: %Stage{handler: fn _ -> "foo" end},
+          route: %Stage{handler: fn route -> {route, "route"} end},
           pass: %Stage.Passthrough{}
         },
         subscriptions: [

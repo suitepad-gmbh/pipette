@@ -7,7 +7,7 @@ defmodule Pipette.Test.ControllerTest do
       id: __MODULE__,
       stages: %{
         foo: %Pipette.Stage{
-          fun: fn
+          handler: fn
             "foo" -> "bar"
             val -> val
           end
@@ -58,7 +58,7 @@ defmodule Pipette.Test.ControllerTest do
         id: __MODULE__,
         stages: %{
           sleep: %Pipette.Stage{
-            fun: fn val ->
+            handler: fn val ->
               :timer.sleep(300)
               "#{val} slept well"
             end

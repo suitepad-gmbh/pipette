@@ -1,24 +1,18 @@
 defmodule NYCBikeShares do
   defmodule Pick do
-    def call(map, key) when is_map(map) do
+    def call(map, key: key) when is_map(map) do
       Map.get(map, key)
     end
   end
 
-  defmodule Pluck do
-    def call(list, keys) when is_list(list) do
-      Enum.map(list, &Map.take(&1, keys))
-    end
-  end
-
   defmodule Filter do
-    def call(list, %{key: k, value: v}) when is_list(list) do
+    def call(list, key: k, value: v) when is_list(list) do
       Enum.filter(list, &(&1[k] == v))
     end
   end
 
   defmodule GetHTTP do
-    def call(url, _ \\ nil) do
+    def call(url) do
       %HTTPoison.Response{body: body} = HTTPoison.get!(url)
       Jason.decode!(body)
     end
@@ -30,13 +24,13 @@ defmodule NYCBikeShares do
   def stages,
     do: %{
       IN: %Stage.Producer{
-        fun: fn -> "http://feeds.citibikenyc.com/stations/stations.json" end
+        handler: fn -> "http://feeds.citibikenyc.com/stations/stations.json" end
       },
-      fetch: %Stage{module: GetHTTP},
-      station_list: %Stage{module: Pick, args: "stationBeanList"},
-      station_count: %Stage{fun: fn list -> Enum.count(list) end},
-      filter: %Stage{module: Filter, args: %{key: "stationName", value: "W 52 St & 11 Ave"}},
-      station: %Stage{module: List, function: :first}
+      fetch: %Stage{handler: GetHTTP},
+      station_list: %Stage{handler: {Pick, key: "stationBeanList"}},
+      station_count: %Stage{handler: fn list -> Enum.count(list) end},
+      filter: %Stage{handler: {Filter, key: "stationName", value: "W 52 St & 11 Ave"}},
+      station: %Stage{handler: &List.first/1}
     }
 
   def subscriptions,

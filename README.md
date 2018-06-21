@@ -55,7 +55,7 @@ Its functionality can be passed in three ways:
 * An anonymous function
 
   ```elixir
-  %Stage{fun: &(&1 + 1)}
+  %Stage{handler: &(&1 + 1)}
   ```
 
 * A module/function

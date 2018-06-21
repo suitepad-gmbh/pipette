@@ -12,7 +12,7 @@ defmodule Pipette.ClientTest do
         id: __MODULE__,
         stages: %{
           block: %Stage{
-            fun: fn
+            handler: fn
               "foo" -> "bar"
               val when is_function(val) -> val.()
               val -> val

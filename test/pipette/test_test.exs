@@ -9,7 +9,7 @@ defmodule Pipette.TestTest do
       id: __MODULE__,
       stages: %{
         foo: %Pipette.Stage{
-          fun: fn
+          handler: fn
             "foo" -> "bar"
             val -> val
           end

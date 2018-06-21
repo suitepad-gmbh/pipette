@@ -1,60 +1,35 @@
 defmodule Pipette.Stage do
   require Logger
 
-  defstruct id: nil,
-            fun: nil,
-            module: nil,
-            function: :call,
-            stream: nil,
-            args: nil
+  defstruct handler: nil
 
-  alias Pipette.Stage
   alias Pipette.IP
   use Pipette.GenStage, stage_type: :producer_consumer
 
-  def handle_events([%IP{} = ip], _from, block) do
-    new_ip = process_ip(ip, block)
-    {:noreply, [new_ip], block}
+  def handle_events([%IP{} = ip], _from, stage) do
+    new_ip = process_ip(ip, stage)
+    {:noreply, [new_ip], stage}
   end
 
-  def handle_cast(%IP{} = ip, block) do
-    new_ip = process_ip(ip, block)
-    {:noreply, [new_ip], block}
+  def handle_cast(%IP{} = ip, stage) do
+    new_ip = process_ip(ip, stage)
+    {:noreply, [new_ip], stage}
   end
 
-  def process_ip(%IP{} = ip, block) do
-    resp = perform(block, ip)
-    IP.update(ip, resp)
+  defp process_ip(%IP{} = ip, %__MODULE__{handler: handler} = stage) do
+    Pipette.Handler.handle(handler, ip)
   rescue
     error ->
       message = Exception.message(error)
-      Logger.debug("error in #{inspect(block)}: #{message}")
+      Logger.debug("error in #{inspect(stage)}: #{message}")
 
       wrapped = %{
         error: error,
         message: message,
-        block: block
+        stage: stage
       }
 
       %IP{ip | route: :error}
       |> IP.set_context(:error, wrapped)
-  end
-
-  def perform(%Stage{fun: fun} = block, %IP{value: value}) when is_function(fun, 2) do
-    fun.(value, block.args)
-  end
-
-  def perform(%Stage{fun: fun}, %IP{value: value}) when is_function(fun, 1) do
-    fun.(value)
-  end
-
-  def perform(%Stage{module: module, function: function, args: nil}, %IP{value: value})
-      when is_atom(function) do
-    apply(module, function, [value])
-  end
-
-  def perform(%Stage{module: module, function: function, args: args}, %IP{value: value})
-      when is_atom(function) do
-    apply(module, function, [value, args])
   end
 end
