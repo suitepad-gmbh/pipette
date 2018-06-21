@@ -2,6 +2,7 @@ defmodule Flow.IP do
   alias Flow.IP
 
   defstruct route: :ok,
+            ref: nil,
             value: nil,
             reply_to: nil,
             context: %{}
@@ -10,7 +11,7 @@ defmodule Flow.IP do
 
   def new({route, value}, opts) when is_atom(route) do
     reply_to = opts[:reply_to]
-    %IP{route: route, value: value, reply_to: reply_to}
+    %IP{ref: make_ref(), route: route, value: value, reply_to: reply_to}
   end
 
   def new(value, opts), do: new({:ok, value}, opts)

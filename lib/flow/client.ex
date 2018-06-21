@@ -86,17 +86,22 @@ defmodule Flow.Client do
 
   def handle_call({:call, value, timeout}, _from, pid_or_name) do
     [producer, consumer] = Controller.get_stages(pid_or_name, [:IN, :OUT])
-    reply_to = self()
-    ip = IP.new(value, reply_to: reply_to)
-    monitor = Process.monitor(consumer)
-    GenStage.cast(producer, ip)
-    resp = await_response(reply_to, monitor, timeout)
-    {:reply, resp, pid_or_name}
+
+    task =
+      Task.async(fn ->
+        reply_to = self()
+        ip = IP.new(value, reply_to: reply_to)
+        monitor = Process.monitor(consumer)
+        GenStage.cast(producer, ip)
+        await_response(ip.ref, monitor, timeout)
+      end)
+
+    {:reply, Task.await(task), pid_or_name}
   end
 
-  def await_response(pid, monitor, timeout) do
+  def await_response(ref, monitor, timeout) do
     receive do
-      %IP{value: value, reply_to: ^pid} ->
+      %IP{value: value, ref: ^ref} ->
         Process.demonitor(monitor)
         {:ok, value}
 
@@ -104,9 +109,10 @@ defmodule Flow.Client do
         {:error, %Error{message: "consumer went down while waiting for return on OUT"}}
 
       _ ->
-        await_response(pid, monitor, timeout)
+        await_response(ref, monitor, timeout)
     after
       timeout ->
+        Process.demonitor(monitor)
         {:error, %TimeoutError{message: "timeout waiting for return on OUT"}}
     end
   end

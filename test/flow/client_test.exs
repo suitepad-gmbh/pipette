@@ -10,13 +10,17 @@ defmodule Flow.ClientTest do
       Pattern.new(%{
         id: __MODULE__,
         blocks: %{
-          foo2bar: %Block{fun: fn val -> String.replace(val, "foo", "bar") end},
-          zig2zag: %Block{fun: fn val -> String.replace(val, "zig", "zag") end}
+          block: %Block{
+            fun: fn
+              "foo" -> "bar"
+              val when is_function(val) -> val.()
+              val -> val
+            end
+          }
         },
         subscriptions: [
-          {:foo2bar, :IN},
-          {:zig2zag, :foo2bar},
-          {:OUT, :zig2zag}
+          {:block, :IN},
+          {:OUT, :block}
         ]
       })
       |> Pattern.start_controller()
@@ -33,32 +37,55 @@ defmodule Flow.ClientTest do
     assert {:ok, "bar"} == Client.call(client, "foo")
   end
 
-  # test "#pull demands a messages from OUT of the pattern" do
-  #   :ok = Client.push(:our_client, "zig")
-  #   assert "zag" == Client.pull(:our_client, :OUT)
-  # end
+  test "#call with timeout", %{client: client} do
+    assert {
+             :error,
+             %Client.TimeoutError{}
+           } = Client.call(client, fn -> :timer.sleep(1000) end, 50)
+  end
 
-  # test "#call with timeout" do
-  #   assert false
-  #   # TODO:
-  #   #
-  #   #   The client awaits messages with its own PID set to reply_to.
-  #   #
-  #   #   In fact, it must await messages for itself
-  #   #   AND messages that are tagged uniquely with that :call request.
-  #   #
-  #   assert {
-  #     :error, %Client.TimeoutError{}
-  #   } = Client.call(:our_client, fn -> :timer.sleep(1000) end, 50)
-  # end
+  test "#pull demands messages out of a pattern", %{client: client, controller: controller} do
+    Task.async(fn ->
+      # lets wait shortly for the pull to be established
+      :timer.sleep(50)
+      pid = Client.start(controller)
+      :ok = Client.push(pid, "foo")
+    end)
+
+    assert "bar" == Client.pull(client, :block)
+  end
 
   test "#push sends a value into the pattern", %{client: client, controller: controller} do
-    task = Task.async(fn -> Client.pull(client, :zig2zag) end)
-    :timer.sleep(10)
+    stage = Pattern.Controller.get_stage(controller, :block)
 
-    Client.start(controller)
-    |> Client.push("zig", to: :foo2bar)
+    task =
+      Task.async(fn ->
+        %Flow.IP{value: value} =
+          GenStage.stream([{stage, max_demand: 1}])
+          |> Stream.take(1)
+          |> Enum.to_list()
+          |> List.first()
 
-    assert Task.await(task) == "zag"
+        value
+      end)
+
+    # lets wait shortly for the GenStage subscription to be established
+    :timer.sleep(50)
+
+    Client.push(client, "foo", to: :block)
+
+    assert "bar" == Task.await(task)
+  end
+
+  test "#call waits for the right message, dismissing everything in between", %{client: client} do
+    fun = fn ->
+      :timer.sleep(100)
+      "times out"
+    end
+
+    # this call will timeout, leaving this message in the Client inbox
+    assert {:error, _} = Client.call(client, fun, 50)
+    # this message will pass through, skipping the message that was left in the inbox
+    assert {:ok, "bar"} == Client.call(client, "foo")
   end
 end
