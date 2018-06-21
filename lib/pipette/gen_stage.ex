@@ -1,6 +1,6 @@
 defmodule Pipette.GenStage do
   defmacro __using__(opts \\ []) do
-    stage_type = Keyword.fetch!(opts, :stage_type)
+    stage_type = Keyword.get(opts, :stage_type, :producer_consumer)
 
     quote bind_quoted: [stage_type: stage_type] do
       use GenStage
@@ -8,22 +8,22 @@ defmodule Pipette.GenStage do
 
       def stage_type, do: @stage_type
 
-      def child_spec(block, opts \\ []) do
-        %{id: __MODULE__, start: {__MODULE__, :start_link, [block, opts]}}
+      def child_spec(stage, opts \\ []) do
+        %{id: __MODULE__, start: {__MODULE__, :start_link, [stage, opts]}}
       end
 
-      def start_link(block, opts \\ []) do
-        GenStage.start_link(__MODULE__, block, opts)
+      def start_link(stage, opts \\ []) do
+        GenStage.start_link(__MODULE__, stage, opts)
       end
 
-      def init(block) do
+      def init(stage) do
         case @stage_type do
           :consumer ->
-            {:consumer, block}
+            {:consumer, stage}
 
           stage_type when stage_type in [:producer, :producer_consumer] ->
             dispatcher = {GenStage.BroadcastDispatcher, []}
-            {stage_type, block, dispatcher: dispatcher}
+            {stage_type, stage, dispatcher: dispatcher}
         end
       end
 

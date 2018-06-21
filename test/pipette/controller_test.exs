@@ -11,7 +11,7 @@ defmodule Pipette.ControllerTest do
       Recipe.new(%{
         id: __MODULE__,
         stages: %{
-          foo: %Stage{handler: fn value -> {value, "message"} end}
+          foo: %Stage{handler: fn route -> {route, "message"} end}
         },
         subscriptions: [
           {:foo, :IN},
@@ -22,8 +22,8 @@ defmodule Pipette.ControllerTest do
       |> Client.start()
 
     assert {:ok, "message"} == Client.call(client, :ok)
-    assert {:ok, "message"} == Client.call(client, :foo)
-    assert {:ok, "message"} == Client.call(client, :bar)
+    assert {:foo, "message"} == Client.call(client, :foo)
+    assert {:bar, "message"} == Client.call(client, :bar)
   end
 
   test "subscribe to all stages of a recipe at once" do
