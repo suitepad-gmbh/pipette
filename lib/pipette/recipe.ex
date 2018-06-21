@@ -30,14 +30,14 @@ defmodule Pipette.Recipe do
             stages: %{},
             subscriptions: []
 
-  def new(%{id: id, stages: stages, subscriptions: subscriptions}) do
+  def new(%{stages: stages, subscriptions: subscriptions} = recipe) do
     stages =
       stages
       |> Map.put(:IN, stages[:IN] || %Stage.PushProducer{})
       |> Map.put(:OUT, stages[:OUT] || %Stage.Consumer{})
 
     %Recipe{
-      id: id,
+      id: Map.get(recipe, :id),
       stages: stages,
       subscriptions: subscriptions
     }

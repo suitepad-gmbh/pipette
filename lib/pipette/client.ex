@@ -101,14 +101,16 @@ defmodule Pipette.Client do
 
   def await_response(ref, monitor, timeout) do
     receive do
-      %IP{value: value, ref: ^ref} ->
+      # TODO: write tests
+      %IP{route: route, value: value, ref: ^ref} ->
         Process.demonitor(monitor)
-        {:ok, value}
+        {route, value}
 
       {:DOWN, ^monitor, _, _, _reason} ->
         {:error, %Error{message: "consumer went down while waiting for return on OUT"}}
 
-      _ ->
+      msg ->
+        Logger.warn("unexpected message on Client.await_response/3: #{inspect msg}")
         await_response(ref, monitor, timeout)
     after
       timeout ->
