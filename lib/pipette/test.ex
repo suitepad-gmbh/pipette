@@ -22,8 +22,12 @@ defmodule Pipette.Test do
     end
   end
 
-  def load_recipe(recipe) do
+  def load_recipe(%Pipette.Recipe{} = recipe) do
     Pipette.Test.Controller.start(recipe)
+  end
+
+  def load_recipe(module) when is_atom(module) do
+    load_recipe(module.recipe())
   end
 
   def push(controller_pid, value) do
@@ -39,7 +43,7 @@ defmodule Pipette.Test do
     value
   end
 
-  def run_recipe(recipe_or_pid, value, outlet \\ :OUT)
+  def run_recipe(recipe_pid_or_module, value, outlet \\ :OUT)
 
   def run_recipe(%Pipette.Recipe{} = recipe, value, outlet) do
     recipe

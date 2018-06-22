@@ -1,11 +1,24 @@
 defmodule Pipette.Recipe do
+
   defmacro __using__(_opts \\ []) do
     quote do
+      Module.register_attribute __MODULE__, :stage, accumulate: true, persist: true
+      Module.register_attribute __MODULE__, :subscribe, accumulate: true, persist: true
+
       def process_name, do: __MODULE__
 
-      def stages, do: %{}
+      def stages do
+        __MODULE__.__info__(:attributes)
+        |> Keyword.get_values(:stage)
+        |> List.flatten
+        |> Enum.into(%{})
+      end
 
-      def subscriptions, do: []
+      def subscriptions do
+        __MODULE__.__info__(:attributes)
+        |> Keyword.get_values(:subscribe)
+        |> List.flatten
+      end
 
       def recipe do
         Pipette.Recipe.new(%{

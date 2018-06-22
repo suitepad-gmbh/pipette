@@ -15,43 +15,30 @@ defmodule Pipette.RecipeTest do
       {:via, Registry, {Registry.ViaTest, :registered}}
     end
 
-    def stages,
-      do: %{
-        add_one: %Stage{handler: &(&1 + 1)}
-      }
-
-    def subscriptions,
-      do: [
-        {:add_one, :IN},
-        {:OUT, :add_one}
-      ]
+    @stage add_one: %Stage{handler: &(&1 + 1)}
+    @subscribe add_one: :IN
+    @subscribe OUT: :add_one
   end
 
   defmodule FooToBarRecipe do
     use Pipette.Recipe
 
-    def stages,
-      do: %{
-        foo_to_bar: %Stage{
-          handler: fn
-            "foo" -> "bar"
-            other -> other
-          end
-        },
-        zig_to_zag: %Stage{
-          handler: fn
-            "zig" -> "zag"
-            other -> other
-          end
-        }
-      }
+    @stage foo_to_bar: %Stage{
+      handler: fn
+        "foo" -> "bar"
+        other -> other
+      end
+    }
+    @stage zig_to_zag: %Stage{
+      handler: fn
+        "zig" -> "zag"
+        other -> other
+      end
+    }
 
-    def subscriptions,
-      do: [
-        {:foo_to_bar, :IN},
-        {:zig_to_zag, :foo_to_bar},
-        {:OUT, :zig_to_zag}
-      ]
+    @subscribe foo_to_bar: :IN
+    @subscribe zig_to_zag: :foo_to_bar
+    @subscribe OUT: :zig_to_zag
   end
 
   test "#start_link starts a controlled recipe" do
