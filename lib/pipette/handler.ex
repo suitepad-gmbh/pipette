@@ -8,9 +8,10 @@ defmodule Pipette.Handler do
   @callback call(value :: any, args :: list(any), ip :: IP.t()) :: return_t
   @optional_callbacks call: 0, call: 1, call: 2, call: 3
 
-  def handle(handler, %IP{} = ip) do
+  def handle(handler, %IP{ref: ref} = ip) do
     case perform(handler, ip) do
-      %IP{} = ip -> ip
+      %IP{ref: ^ref} = ip -> ip
+      %IP{} -> raise Pipette.Error.InvalidIP, "IP.ref mismatch"
       value -> IP.update(ip, value)
     end
   end
