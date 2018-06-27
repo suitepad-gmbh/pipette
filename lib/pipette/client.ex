@@ -27,15 +27,23 @@ defmodule Pipette.Client do
     {:ok, pid_or_name}
   end
 
-  def call(pid, value, timeout \\ :infinity) do
-    GenServer.call(pid, {:call, value, timeout}, :infinity)
+  def call(pid, ip_or_value, timeout \\ :infinity)
+
+  def call(pid, %IP{} = ip, timeout) do
+    GenServer.call(pid, {:call, ip, timeout}, :infinity)
   rescue
     error ->
       {:error, error}
   end
 
-  def call!(pid, value, timeout \\ :infinity) do
-    case GenServer.call(pid, {:call, value, timeout}, :infinity) do
+  def call(pid, value, timeout) do
+    call(pid, IP.new(value), timeout)
+  end
+
+  def call!(pid, ip_or_value, timeout \\ :infinity)
+
+  def call!(pid, %IP{} = ip, timeout) do
+    case GenServer.call(pid, {:call, ip, timeout}, :infinity) do
       {:ok, value} ->
         value
 
@@ -52,18 +60,27 @@ defmodule Pipette.Client do
     end
   end
 
-  def push(pid, value, opts \\ []) do
-    GenServer.call(pid, {:push, value, opts})
+  def call!(pid, value, timeout) do
+    call!(pid, IP.new(value), timeout)
+  end
+
+  def push(pid, ip_or_value, opts \\ [])
+
+  def push(pid, %IP{} = ip, opts) do
+    GenServer.call(pid, {:push, ip, opts})
+  end
+
+  def push(pid, value, opts) do
+    push(pid, IP.new(value), opts)
   end
 
   def pull(pid, stage) do
     GenServer.call(pid, {:pull, stage}, :infinity)
   end
 
-  def handle_call({:push, value, opts}, _from, pid_or_name) do
+  def handle_call({:push, %IP{} = ip, opts}, _from, pid_or_name) do
     stage = opts[:to] || :IN
     producer = Controller.get_stage_pid(pid_or_name, stage)
-    ip = IP.new(value)
 
     GenStage.cast(producer, ip)
     {:reply, :ok, pid_or_name}
@@ -84,13 +101,12 @@ defmodule Pipette.Client do
     {:reply, value, pid_or_name}
   end
 
-  def handle_call({:call, value, timeout}, _from, pid_or_name) do
+  def handle_call({:call, %IP{} = ip, timeout}, _from, pid_or_name) do
     [producer, consumer] = Controller.get_stage_pids(pid_or_name, [:IN, :OUT])
 
     task =
       Task.async(fn ->
-        reply_to = self()
-        ip = IP.new(value, reply_to: reply_to)
+        ip = IP.set(ip, :reply_to, self())
         monitor = Process.monitor(consumer)
         GenStage.cast(producer, ip)
         await_response(ip.ref, monitor, timeout)
