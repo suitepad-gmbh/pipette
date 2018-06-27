@@ -22,7 +22,17 @@ defmodule Pipette.IP do
     %IP{ip | route: route, value: value}
   end
 
-  def update(%IP{} = ip, value), do: update(ip, {:ok, value})
+  def update(%IP{} = ip, value) do
+    update(ip, {:ok, value})
+  end
+
+  def set(%IP{} = ip, :value, value) do
+    update(ip, value)
+  end
+
+  def set(%IP{} = ip, field, value) when field in [:route, :ref, :reply_to] do
+    Map.put(ip, field, value)
+  end
 
   def set_context(%IP{} = ip, key, value)
       when is_atom(key) do
