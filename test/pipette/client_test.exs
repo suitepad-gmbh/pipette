@@ -1,10 +1,11 @@
 defmodule Pipette.ClientTest do
   use ExUnit.Case
 
-  alias Pipette.Recipe
-  alias Pipette.Stage
   alias Pipette.Client
   alias Pipette.Controller
+  alias Pipette.IP
+  alias Pipette.Recipe
+  alias Pipette.Stage
 
   setup do
     controller =
@@ -34,8 +35,18 @@ defmodule Pipette.ClientTest do
     assert "bar" == Client.call!(client, "foo")
   end
 
+  test "#call! accepts an IP as input", %{client: client} do
+    ip = IP.new("foo")
+    assert "bar" == Client.call!(client, ip)
+  end
+
   test "#call pushes a messages on IN and waits for the response on OUT", %{client: client} do
     assert {:ok, "bar"} == Client.call(client, "foo")
+  end
+
+  test "#call accepts an IP as input", %{client: client} do
+    ip = IP.new("foo")
+    assert {:ok, "bar"} == Client.call(client, ip)
   end
 
   test "#call with timeout", %{client: client} do
@@ -74,6 +85,29 @@ defmodule Pipette.ClientTest do
     :timer.sleep(50)
 
     Client.push(client, "foo", to: :block)
+
+    assert "bar" == Task.await(task)
+  end
+
+  test "#push accepts an IP as input", %{client: client, controller: controller} do
+    stage = Controller.get_stage_pid(controller, :block)
+
+    task =
+      Task.async(fn ->
+        %Pipette.IP{value: value} =
+          GenStage.stream([{stage, max_demand: 1}])
+          |> Stream.take(1)
+          |> Enum.to_list()
+          |> List.first()
+
+        value
+      end)
+
+    # lets wait shortly for the GenStage subscription to be established
+    :timer.sleep(50)
+
+    ip = IP.new("foo")
+    Client.push(client, ip, to: :block)
 
     assert "bar" == Task.await(task)
   end
