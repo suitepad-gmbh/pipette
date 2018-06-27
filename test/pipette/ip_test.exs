@@ -27,11 +27,22 @@ defmodule Pipette.IPTest do
     assert %IP{value: :foo, reply_to: ^pid} = IP.new(:foo, reply_to: pid)
   end
 
-  test "#update takes a new value and updates the given ip" do
-    pid = self()
-    ip = %IP{value: :foo, route: :from, reply_to: pid}
-    assert %IP{value: :bar, route: :ok, reply_to: ^pid} = IP.update(ip, :bar)
-    assert %IP{value: :bar, route: :somewhere, reply_to: ^pid} = IP.update(ip, {:somewhere, :bar})
+  test "#update takes a new value and/or options and updates the given IP" do
+    %IP{ref: ref, reply_to: pid} = ip = IP.new(:foo, reply_to: self())
+    assert %IP{reply_to: ^pid, ref: ^ref, value: :bar} = IP.update(ip, :bar)
+
+    assert %IP{reply_to: ^pid, ref: ^ref, value: {"hello", "world"}} =
+             IP.update(ip, {"hello", "world"})
+
+    assert %IP{reply_to: ^pid, ref: ^ref, route: :somewhere, value: :bar} =
+             IP.update(ip, {:somewhere, :bar})
+
+    assert %IP{reply_to: :me, ref: ^ref, value: :bar} = IP.update(ip, :bar, reply_to: :me)
+
+    assert %IP{reply_to: :me, ref: ^ref, route: :somewhere, value: :bar} =
+             IP.update(ip, {:somewhere, :bar}, reply_to: :me)
+
+    assert %IP{reply_to: :me, ref: ^ref, value: :foo} = IP.update(ip, reply_to: :me)
   end
 
   test "#set_context puts a key onto the context" do
