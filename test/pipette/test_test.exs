@@ -7,21 +7,12 @@ defmodule Pipette.TestTest do
   defmodule FooBarRecipe do
     use Pipette.Recipe
 
-    def stages,
-      do: %{
-        foo: %Pipette.Stage{
-          handler: fn
-            "foo" -> "bar"
-            val -> val
-          end
-        }
-      }
-
-    def subscriptions,
-      do: [
-        {:foo, :IN},
-        {:OUT, :foo}
-      ]
+    @stage foo: %Pipette.Stage{handler: fn
+      "foo" -> "bar"
+      val -> val
+    end}
+    @subscribe foo: :IN
+    @subscribe OUT: :foo
   end
 
   test "#load_recipe starts a test recipe controller" do
@@ -73,7 +64,8 @@ defmodule Pipette.TestTest do
              |> run_recipe("foo", :IN)
   end
 
-  test "#run_recipe takes an atom and and starts the defined recipe" do
-    assert "foo" == run_recipe(FooBarRecipe, "foo", :IN)
+  test "#run_recipe takes a module and starts the defined recipe" do
+    assert "bar" == run_recipe(FooBarRecipe, "foo")
   end
+
 end

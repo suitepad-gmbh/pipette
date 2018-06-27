@@ -30,30 +30,30 @@ defmodule Pipette.Test do
     load_recipe(module.recipe())
   end
 
-  def push(controller_pid, value) do
+  def push(controller_pid, value) when is_pid(controller_pid) do
     Pipette.Test.Controller.push(controller_pid, value)
   end
 
-  def await(controller_pid, outlet \\ :OUT) do
+  def await(controller_pid, outlet \\ :OUT) when is_pid(controller_pid) do
     Pipette.Test.Controller.await(controller_pid, outlet)
   end
 
-  def await_value(controller_pid, outlet \\ :OUT) do
+  def await_value(controller_pid, outlet \\ :OUT) when is_pid(controller_pid) do
     %Pipette.IP{value: value} = await(controller_pid, outlet)
     value
   end
 
   def run_recipe(recipe_pid_or_module, value, outlet \\ :OUT)
 
-  def run_recipe(%Pipette.Recipe{} = recipe, value, outlet) do
-    recipe
-    |> load_recipe
-    |> run_recipe(value, outlet)
-  end
-
   def run_recipe(pid, value, outlet) when is_pid(pid) do
     pid
     |> push(value)
     |> await_value(outlet)
+  end
+
+  def run_recipe(module, value, outlet) do
+    module
+    |> load_recipe
+    |> run_recipe(value, outlet)
   end
 end
