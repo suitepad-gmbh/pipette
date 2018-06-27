@@ -29,6 +29,7 @@ defmodule Pipette.IPTest do
 
   test "#update takes a new value and/or options and updates the given IP" do
     %IP{ref: ref, reply_to: pid} = ip = IP.new(:foo, reply_to: self())
+
     assert %IP{reply_to: ^pid, ref: ^ref, value: :bar} = IP.update(ip, :bar)
 
     assert %IP{reply_to: ^pid, ref: ^ref, value: {"hello", "world"}} =
@@ -36,13 +37,38 @@ defmodule Pipette.IPTest do
 
     assert %IP{reply_to: ^pid, ref: ^ref, route: :somewhere, value: :bar} =
              IP.update(ip, {:somewhere, :bar})
+  end
 
-    assert %IP{reply_to: :me, ref: ^ref, value: :bar} = IP.update(ip, :bar, reply_to: :me)
+  test "#set allows updating the individual fields of an IP" do
+    %IP{ref: ref, reply_to: pid} = ip = IP.new(:foo, reply_to: self())
 
-    assert %IP{reply_to: :me, ref: ^ref, route: :somewhere, value: :bar} =
-             IP.update(ip, {:somewhere, :bar}, reply_to: :me)
+    assert %IP{reply_to: :me, ref: ^ref} = IP.set(ip, :reply_to, :me)
 
-    assert %IP{reply_to: :me, ref: ^ref, value: :foo} = IP.update(ip, reply_to: :me)
+    assert %IP{reply_to: ^pid, ref: nil} = IP.set(ip, :ref, nil)
+
+    assert %IP{reply_to: ^pid, ref: ^ref, value: "bar"} = IP.set(ip, :value, "bar")
+
+    assert %IP{reply_to: ^pid, ref: ^ref, route: :somewhere, value: "bar"} =
+             IP.set(ip, :value, {:somewhere, "bar"})
+  end
+
+  test "#set does not allow updating the context of the IP" do
+    ip = IP.new(:foo)
+         |> IP.set_context(:some, "value")
+
+    assert_raise FunctionClauseError, fn ->
+      IP.set(ip, :context, "bar")
+    end
+    assert_raise FunctionClauseError, fn ->
+      IP.set(ip, :context, %{some: "other value"})
+    end
+  end
+
+  test "#set does not allow setting arbitrary keys on the IP" do
+    ip = IP.new(:foo)
+    assert_raise FunctionClauseError, fn ->
+      IP.set(ip, :some_key, "bar")
+    end
   end
 
   test "#set_context puts a key onto the context" do
@@ -56,3 +82,4 @@ defmodule Pipette.IPTest do
     assert new_ip.context == %{context | zig: "blubb"}
   end
 end
+

@@ -19,23 +19,19 @@ defmodule Pipette.IP do
   def new(value, opts), do: new({:ok, value}, opts)
 
   def update(%IP{} = ip, {route, value}) when is_atom(route) do
-    update(ip, route: route, value: value)
-  end
-
-  def update(%IP{} = ip, opts) when is_list(opts) do
-    Map.merge(ip, Map.new(opts))
+    %IP{ip | route: route, value: value}
   end
 
   def update(%IP{} = ip, value) do
-    update(ip, value: value)
+    update(ip, {:ok, value})
   end
 
-  def update(%IP{} = ip, {route, value}, opts) when is_atom(route) and is_list(opts) do
-    update(ip, [{:value, value} | [{:route, route} | opts]])
+  def set(%IP{} = ip, :value, value) do
+    update(ip, value)
   end
 
-  def update(%IP{} = ip, value, opts) when is_list(opts) do
-    update(ip, [{:value, value} | opts])
+  def set(%IP{} = ip, field, value) when field in [:route, :ref, :reply_to] do
+    Map.put(ip, field, value)
   end
 
   def set_context(%IP{} = ip, key, value)
