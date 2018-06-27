@@ -55,10 +55,14 @@ defmodule Pipette.HandlerTest do
   end
 
   test "#handle returns a new IP", %{ip: ip} do
-    new_ip = Handler.handle(fn _ -> IP.new("bar") end, ip)
+    new_ip = Handler.handle(fn _, _, ip -> IP.set_context(ip, :foo, :bar) end, ip)
+    assert %IP{context: %{foo: :bar}} = new_ip
+  end
 
-    assert %IP{route: :ok, value: "bar"} = new_ip
-    assert new_ip.ref != ip.ref
+  test "#handle raises an error if the new IP ref doesn't match", %{ip: %IP{ref: ref} = ip} do
+    assert_raise Pipette.Error.InvalidIP, "IP.ref mismatch", fn ->
+      Handler.handle(fn _ -> IP.new("foo") end, ip)
+    end
   end
 
   test "#perform handles a module without arguments", %{ip: ip} do
