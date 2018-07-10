@@ -59,7 +59,7 @@ defmodule Pipette.HandlerTest do
     assert %IP{context: %{foo: :bar}} = new_ip
   end
 
-  test "#handle raises an error if the new IP ref doesn't match", %{ip: %IP{ref: ref} = ip} do
+  test "#handle raises an error if the new IP ref doesn't match", %{ip: %IP{} = ip} do
     assert_raise Pipette.Error.InvalidIP, "IP.ref mismatch", fn ->
       Handler.handle(fn _ -> IP.new("foo") end, ip)
     end
