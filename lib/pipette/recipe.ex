@@ -1,23 +1,22 @@
 defmodule Pipette.Recipe do
-
   defmacro __using__(_opts \\ []) do
     quote do
-      Module.register_attribute __MODULE__, :stage, accumulate: true, persist: true
-      Module.register_attribute __MODULE__, :subscribe, accumulate: true, persist: true
+      Module.register_attribute(__MODULE__, :stage, accumulate: true, persist: true)
+      Module.register_attribute(__MODULE__, :subscribe, accumulate: true, persist: true)
 
       def process_name, do: __MODULE__
 
       def stages do
         __MODULE__.__info__(:attributes)
         |> Keyword.get_values(:stage)
-        |> List.flatten
+        |> List.flatten()
         |> Enum.into(%{})
       end
 
       def subscriptions do
         __MODULE__.__info__(:attributes)
         |> Keyword.get_values(:subscribe)
-        |> List.flatten
+        |> List.flatten()
       end
 
       def recipe do
@@ -32,7 +31,7 @@ defmodule Pipette.Recipe do
 
       def child_spec(_opts \\ []), do: Pipette.Controller.child_spec(__MODULE__.recipe())
 
-      defoverridable process_name: 0, stages: 0, subscriptions: 0
+      defoverridable process_name: 0, recipe: 0, stages: 0, subscriptions: 0
     end
   end
 

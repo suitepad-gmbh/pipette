@@ -1,5 +1,6 @@
 defmodule Pipette.RecipeTest do
   use ExUnit.Case
+  use Pipette.Test
 
   alias Pipette.Stage
   alias Pipette.Controller
@@ -24,21 +25,38 @@ defmodule Pipette.RecipeTest do
     use Pipette.Recipe
 
     @stage foo_to_bar: %Stage{
-      handler: fn
-        "foo" -> "bar"
-        other -> other
-      end
-    }
+             handler: fn
+               "foo" -> "bar"
+               other -> other
+             end
+           }
     @stage zig_to_zag: %Stage{
-      handler: fn
-        "zig" -> "zag"
-        other -> other
-      end
-    }
+             handler: fn
+               "zig" -> "zag"
+               other -> other
+             end
+           }
 
     @subscribe foo_to_bar: :IN
     @subscribe zig_to_zag: :foo_to_bar
     @subscribe OUT: :zig_to_zag
+  end
+
+  defmodule OverrideRecipe do
+    use Pipette.Recipe
+
+    def recipe do
+      Pipette.Recipe.new(%{
+        id: process_name(),
+        stages: %{
+          add_one: %Stage{handler: &(&1 + 1)}
+        },
+        subscriptions: [
+          {:add_one, :IN},
+          {:OUT, :add_one}
+        ]
+      })
+    end
   end
 
   test "#start_link starts a controlled recipe" do
@@ -75,5 +93,9 @@ defmodule Pipette.RecipeTest do
 
   test "#process_name returns the overwrite if given" do
     assert {:via, Registry, {Registry.ViaTest, :registered}} == RegisteredRecipe.process_name()
+  end
+
+  test "#recipe is overridable" do
+    assert run_recipe(OverrideRecipe, 1) == 2
   end
 end
