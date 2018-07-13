@@ -22,12 +22,14 @@ defmodule Pipette.Test do
     end
   end
 
-  def load_recipe(%Pipette.Recipe{} = recipe) do
-    Pipette.Test.Controller.start(recipe)
+  def load_recipe(recipe_or_module, args \\ [])
+
+  def load_recipe(%Pipette.Recipe{} = recipe, args) do
+    Pipette.Test.Controller.start(recipe, args)
   end
 
-  def load_recipe(module) when is_atom(module) do
-    load_recipe(module.recipe())
+  def load_recipe(module, args) when is_atom(module) do
+    load_recipe(module.recipe(), args)
   end
 
   def push(controller_pid, value) when is_pid(controller_pid) do

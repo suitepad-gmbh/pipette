@@ -5,23 +5,23 @@ defmodule Pipette.Test.Controller do
   alias Pipette.IP
   alias Pipette.Recipe
 
-  def child_spec(recipe, opts \\ []) do
-    %{id: __MODULE__, start: {__MODULE__, :start_link, [recipe, opts]}}
+  def child_spec(recipe_and_args, opts \\ []) do
+    %{id: __MODULE__, start: {__MODULE__, :start_link, [recipe_and_args, opts]}}
   end
 
-  def start_link(recipe, opts \\ []) do
-    GenServer.start_link(__MODULE__, recipe, opts)
+  def start_link(recipe_and_args, opts \\ []) do
+    GenServer.start_link(__MODULE__, recipe_and_args, opts)
   end
 
-  def start(recipe, opts \\ []) do
-    {:ok, pid} = start_link(recipe, opts)
+  def start(recipe, args \\ [], opts \\ []) do
+    {:ok, pid} = start_link({recipe, args}, opts)
     pid
   end
 
-  def init(recipe) do
+  def init({recipe, args}) do
     controller =
       recipe
-      |> create_test_recipe
+      |> create_test_recipe(args)
       |> Recipe.start_controller()
 
     client = Client.start(controller)
@@ -80,20 +80,21 @@ defmodule Pipette.Test.Controller do
     pid
   end
 
-  defp create_test_recipe(recipe) do
-    stages = create_test_stage_map(recipe.stages)
+  defp create_test_recipe(recipe, args) do
+    stages = create_test_stage_map(recipe.stages, args)
     subscriptions = [{:__TEST_CONSUMER__, {:*, :*}} | recipe.subscriptions]
 
     %Recipe{recipe | id: nil, stages: stages, subscriptions: subscriptions}
   end
 
-  defp create_test_stage_map(stages) do
+  defp create_test_stage_map(stages, args) do
     stages
     |> Enum.reduce(%{}, fn {key, stage}, acc ->
       new_stage =
-        case stage.__struct__.stage_type do
-          :consumer -> %Pipette.Stage.Passthrough{id: key}
-          :producer -> %Pipette.Stage.PushProducer{id: key}
+        case {stage.__struct__.stage_type, args[:keep_producer]} do
+          {:consumer, _} -> %Pipette.Stage.Passthrough{id: key}
+          {:producer, true} -> stage
+          {:producer, _} -> %Pipette.Stage.PushProducer{id: key}
           _ -> stage
         end
 
