@@ -41,6 +41,19 @@ defmodule Pipette.TestTest do
     @subscribe OUT: :IN
   end
 
+  defmodule TimeoutRecipe do
+    use Pipette.Recipe
+
+    @stage foo: %Pipette.Stage{
+             handler: fn _ ->
+               Process.sleep(100)
+               {:ok, :done}
+             end
+           }
+    @subscribe foo: :IN
+    @subscribe OUT: :foo
+  end
+
   test "#load_recipe starts a test recipe controller" do
     pid = load_recipe(FooBarRecipe.recipe())
     assert is_pid(pid)
@@ -80,6 +93,20 @@ defmodule Pipette.TestTest do
              |> await(:IN)
   end
 
+  test "#await can take an optional timeout" do
+    assert {:timeout, _} =
+             catch_exit(
+               load_recipe(TimeoutRecipe.recipe())
+               |> push("foo")
+               |> await(:OUT, timeout: 50)
+             )
+
+    assert %IP{value: :done} =
+             load_recipe(TimeoutRecipe.recipe())
+             |> push("foo")
+             |> await(:OUT, timeout: 150)
+  end
+
   test "#run_recipe starts a recipe, puts a message on IN and awaits OUT" do
     assert "bar" == run_recipe(FooBarRecipe.recipe(), "foo")
   end
@@ -100,5 +127,10 @@ defmodule Pipette.TestTest do
 
   test "#run_recipe takes a module and starts the defined recipe" do
     assert "bar" == run_recipe(FooBarRecipe, "foo")
+  end
+
+  test "#run_recipe can take an optional timeout" do
+    assert {:timeout, _} = catch_exit(run_recipe(TimeoutRecipe, "foo", :OUT, timeout: 50))
+    assert run_recipe(TimeoutRecipe, "foo", :OUT, timeout: 150) == :done
   end
 end

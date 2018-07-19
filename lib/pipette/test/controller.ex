@@ -61,7 +61,7 @@ defmodule Pipette.Test.Controller do
   Requests the result for the given stage. If there is no current result, it
   waits for it.
   """
-  def await(pid, stage_id \\ :OUT) do
+  def await(pid, stage_id \\ :OUT, opts \\ []) do
     controller = GenServer.call(pid, :get_controller)
     stage_pid = Pipette.Controller.get_stage_pid(controller, :__TEST_CONSUMER__)
 
@@ -69,7 +69,7 @@ defmodule Pipette.Test.Controller do
       GenServer.cast(stage_pid, {:fetch, stage_id, self()})
       await_fetch_response()
     end)
-    |> Task.await()
+    |> Task.await(opts[:timeout] || 5000)
   end
 
   @doc """

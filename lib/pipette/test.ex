@@ -36,26 +36,26 @@ defmodule Pipette.Test do
     Pipette.Test.Controller.push(controller_pid, value)
   end
 
-  def await(controller_pid, outlet \\ :OUT) when is_pid(controller_pid) do
-    Pipette.Test.Controller.await(controller_pid, outlet)
+  def await(controller_pid, outlet \\ :OUT, opts \\ []) when is_pid(controller_pid) do
+    Pipette.Test.Controller.await(controller_pid, outlet, opts)
   end
 
-  def await_value(controller_pid, outlet \\ :OUT) when is_pid(controller_pid) do
-    %Pipette.IP{value: value} = await(controller_pid, outlet)
+  def await_value(controller_pid, outlet \\ :OUT, opts \\ []) when is_pid(controller_pid) do
+    %Pipette.IP{value: value} = await(controller_pid, outlet, opts)
     value
   end
 
-  def run_recipe(recipe_pid_or_module, value, outlet \\ :OUT)
+  def run_recipe(recipe_pid_or_module, value, outlet \\ :OUT, opts \\ [])
 
-  def run_recipe(pid, value, outlet) when is_pid(pid) do
+  def run_recipe(pid, value, outlet, opts) when is_pid(pid) do
     pid
     |> push(value)
-    |> await_value(outlet)
+    |> await_value(outlet, opts)
   end
 
-  def run_recipe(module, value, outlet) do
+  def run_recipe(module, value, outlet, opts) do
     module
     |> load_recipe
-    |> run_recipe(value, outlet)
+    |> run_recipe(value, outlet, opts)
   end
 end
