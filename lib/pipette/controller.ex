@@ -1,10 +1,15 @@
 defmodule Pipette.Controller do
+  @moduledoc """
+  This module is the process that binds all stages and subscriptions of a `Pipette.Recipe`.
+  """
+
   use GenServer
 
   require Logger
 
   alias Pipette.Recipe
 
+  @doc false
   def child_spec(recipe) do
     %{
       id: recipe.id,
@@ -12,11 +17,15 @@ defmodule Pipette.Controller do
     }
   end
 
+  @doc """
+  Starts a given recipe, its `GenStage`s and creates all subscriptions between them.
+  """
   def start_link(recipe, opts \\ []) do
     opts = Keyword.merge([name: recipe.id], opts)
     GenServer.start_link(__MODULE__, recipe, opts)
   end
 
+  @doc false
   def init(recipe) do
     stage_pids = start_stages(recipe)
 
@@ -29,15 +38,22 @@ defmodule Pipette.Controller do
     {:ok, state}
   end
 
+  @doc """
+  Returns the pid of a `GenStage` by its label.
+  """
   def get_stage_pid(pid, stage_id) do
     [stage_pid] = get_stage_pids(pid, [stage_id])
     stage_pid
   end
 
+  @doc """
+  Returns all `GenStage` pids from a list of labels.
+  """
   def get_stage_pids(pid, stage_ids) do
     GenServer.call(pid, {:get_stage_pids, stage_ids})
   end
 
+  @doc false
   def handle_call({:get_stage_pids, stage_ids}, _from, %{stage_pids: stage_pids} = state) do
     pids =
       Map.take(stage_pids, stage_ids)
@@ -46,6 +62,7 @@ defmodule Pipette.Controller do
     {:reply, pids, state}
   end
 
+  @doc false
   def handle_call(
         {:get_stage, stage_pid},
         _from,

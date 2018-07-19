@@ -1,10 +1,11 @@
 defmodule Pipette.Test.Consumer do
+  @moduledoc false
+
   use Pipette.GenStage, stage_type: :consumer
 
   alias Pipette.IP
 
-  defstruct id: nil,
-            test_controller_pid: nil
+  defstruct test_controller_pid: nil
 
   def init(block) do
     state = %{

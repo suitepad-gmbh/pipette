@@ -1,5 +1,36 @@
 defmodule Pipette.Client do
+  @moduledoc """
+  Implements basic protocols for a FBP application.
+
+  The basic idea behind a client is, to provide standard calling patterns for recipes.
+  A recipe with its stages is executed asynchronously. A client can be used to wait for return values
+  by blocking the calling process.
+
+  It is common to start a single recipe, that works on messages from multiple clients.
+
+  ## Call-based
+
+  This basic protocol lets you _push_ messages into the `:IN`-stage of a recipe and _pulls_ one message
+  from the `:OUT`-stage.
+
+  The call blocks the caller and client (not the recipe) for a configurable timeout (default `:infinity`).
+
+  ## Push-based
+
+  This allows to _push_ messages into a specific (default: `:IN`) stage. Once sent, it returns.
+
+  Note: The stage must implement `GenStage.handle_cast/2` in order to receive messages from a client.
+
+  ## Pull-based
+
+  You can use this to _pull_ messages from a specified (default: `:OUT`) stage.
+
+  It does so by creating demand for one message on the stage, and waits for a single message.
+  """
   use GenServer
+
+  @doc false
+  def child_spec(arg)
 
   require Logger
 
@@ -14,19 +45,30 @@ defmodule Pipette.Client do
   alias Pipette.Controller
   alias Pipette.IP
 
-  def start(pid_or_name, opts \\ []) do
-    {:ok, pid} = start_link(pid_or_name, opts)
+  @doc """
+  Starts a client and return its pid.
+  """
+  def start(controller, opts \\ []) do
+    {:ok, pid} = start_link(controller, opts)
     pid
   end
 
-  def start_link(pid_or_name, opts \\ []) do
-    GenServer.start_link(__MODULE__, pid_or_name, opts)
+  @doc """
+  Starts a client.
+  """
+  def start_link(controller, opts \\ []) do
+    GenServer.start_link(__MODULE__, controller, opts)
   end
 
-  def init(pid_or_name) do
-    {:ok, pid_or_name}
+  @doc false
+  def init(controller) do
+    {:ok, controller}
   end
 
+  @spec call(pid, ip_or_value :: term | Pipette.IP.t(), timeout :: integer | :infinity) :: {route :: atom, value :: term}
+  @doc """
+  Call the recipe of this client on `:IN` and wait for one message on `:OUT`.
+  """
   def call(pid, ip_or_value, timeout \\ :infinity)
 
   def call(pid, %IP{} = ip, timeout) do
@@ -40,6 +82,15 @@ defmodule Pipette.Client do
     call(pid, IP.new(value), timeout)
   end
 
+  @spec call!(pid, ip_or_value :: term | Pipette.IP.t(), timeout :: integer | :infinity) :: term
+  @doc """
+  Call the recipe of this client on `:IN` and wait for one message on `:OUT`.
+
+  The potential failures are either a timeout occurs or the stage returns a value routed
+  to something else than `{:ok, value}`.
+
+  Raises `Pipette.Client.Error` or `Pipette.Client.TimeoutError` in case of failure.
+  """
   def call!(pid, ip_or_value, timeout \\ :infinity)
 
   def call!(pid, %IP{} = ip, timeout) do
@@ -64,6 +115,10 @@ defmodule Pipette.Client do
     call!(pid, IP.new(value), timeout)
   end
 
+  @spec push(pid(), value :: term | Pipette.IP.t, keyword) :: term
+  @doc """
+  Push a message onto a stage (default: `:IN`).
+  """
   def push(pid, ip_or_value, opts \\ [])
 
   def push(pid, %IP{} = ip, opts) do
@@ -74,20 +129,26 @@ defmodule Pipette.Client do
     push(pid, IP.new(value), opts)
   end
 
-  def pull(pid, stage) do
-    GenServer.call(pid, {:pull, stage}, :infinity)
+  @spec pull(pid, stage :: atom, timeout :: integer | :infinity) :: {route :: atom, value :: term}
+  @doc """
+  Pull one message from a stage (default: `:OUT`).
+  """
+  def pull(pid, stage, timeout \\ :infinity) do
+    GenServer.call(pid, {:pull, stage}, timeout)
   end
 
-  def handle_call({:push, %IP{} = ip, opts}, _from, pid_or_name) do
+  @doc false
+  def handle_call({:push, %IP{} = ip, opts}, _from, controller) do
     stage = opts[:to] || :IN
-    producer = Controller.get_stage_pid(pid_or_name, stage)
+    producer = Controller.get_stage_pid(controller, stage)
 
     GenStage.cast(producer, ip)
-    {:reply, :ok, pid_or_name}
+    {:reply, :ok, controller}
   end
 
-  def handle_call({:pull, stage}, _from, pid_or_name) do
-    pid = Controller.get_stage_pid(pid_or_name, stage)
+  @doc false
+  def handle_call({:pull, stage}, _from, controller) do
+    pid = Controller.get_stage_pid(controller, stage)
 
     task =
       Task.async(fn ->
@@ -98,11 +159,12 @@ defmodule Pipette.Client do
       end)
 
     %Pipette.IP{value: value} = Task.await(task, :infinity)
-    {:reply, value, pid_or_name}
+    {:reply, value, controller}
   end
 
-  def handle_call({:call, %IP{} = ip, timeout}, _from, pid_or_name) do
-    [producer, consumer] = Controller.get_stage_pids(pid_or_name, [:IN, :OUT])
+  @doc false
+  def handle_call({:call, %IP{} = ip, timeout}, _from, controller) do
+    [producer, consumer] = Controller.get_stage_pids(controller, [:IN, :OUT])
 
     task =
       Task.async(fn ->
@@ -112,10 +174,10 @@ defmodule Pipette.Client do
         await_response(ip.ref, monitor, timeout)
       end)
 
-    {:reply, Task.await(task), pid_or_name}
+    {:reply, Task.await(task), controller}
   end
 
-  def await_response(ref, monitor, timeout) do
+  defp await_response(ref, monitor, timeout) do
     receive do
       # TODO: write tests
       %IP{route: route, value: value, ref: ^ref} ->
@@ -135,8 +197,9 @@ defmodule Pipette.Client do
     end
   end
 
-  def handle_info(msg, pid_or_name) do
+  @doc false
+  def handle_info(msg, controller) do
     Logger.info("#{__MODULE__} received an unexpected message: #{inspect(msg)}")
-    {:noreply, pid_or_name}
+    {:noreply, controller}
   end
 end
