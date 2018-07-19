@@ -42,7 +42,7 @@ defmodule Pipette.IPTest do
   test "#set allows updating the individual fields of an IP" do
     %IP{ref: ref, reply_to: pid} = ip = IP.new(:foo, reply_to: self())
 
-    assert %IP{reply_to: :me, ref: ^ref} = IP.set(ip, :reply_to, :me)
+    assert %IP{reply_to: nil, ref: ^ref} = IP.set(ip, :reply_to, nil)
 
     assert %IP{reply_to: ^pid, ref: nil} = IP.set(ip, :ref, nil)
 

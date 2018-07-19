@@ -1,4 +1,5 @@
 defmodule Pipette.Test.Controller do
+  @moduledoc false
   use GenServer
 
   alias Pipette.Client
@@ -38,8 +39,8 @@ defmodule Pipette.Test.Controller do
     {:reply, controller, state}
   end
 
-  def handle_call({:push, value}, _from, %{client: client} = state) do
-    Client.push(client, value)
+  def handle_call({:push, value, inlet}, _from, %{client: client} = state) do
+    Client.push(client, value, to: inlet)
     {:reply, :ok, state}
   end
 
@@ -50,9 +51,6 @@ defmodule Pipette.Test.Controller do
     {:reply, events, state}
   end
 
-  @doc """
-  Returns the recorded events
-  """
   def events(pid) do
     GenServer.call(pid, :events)
   end
@@ -72,11 +70,8 @@ defmodule Pipette.Test.Controller do
     |> Task.await(opts[:timeout] || 5000)
   end
 
-  @doc """
-  Pushes the given value onto the recipe
-  """
-  def push(pid, value) do
-    GenServer.call(pid, {:push, value})
+  def push(pid, value, inlet \\ :IN) do
+    GenServer.call(pid, {:push, value, inlet})
     pid
   end
 
