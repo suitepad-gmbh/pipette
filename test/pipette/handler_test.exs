@@ -41,27 +41,27 @@ defmodule Pipette.HandlerTest do
     {:ok, %{ip: ip}}
   end
 
-  test "#handle updates the value of the given IP", %{ip: ip} do
+  test "#call updates the value of the given IP", %{ip: ip} do
     ip_ref = ip.ref
 
-    assert %IP{route: :ok, value: "bar", ref: ^ip_ref} = Handler.handle(fn _ -> "bar" end, ip)
+    assert %IP{route: :ok, value: "bar", ref: ^ip_ref} = Handler.call(fn _ -> "bar" end, ip)
   end
 
-  test "#handle update the route of the IP", %{ip: ip} do
+  test "#call update the route of the IP", %{ip: ip} do
     ip_ref = ip.ref
 
     assert %IP{route: :error, value: "bar", ref: ^ip_ref} =
-             Handler.handle(fn _ -> {:error, "bar"} end, ip)
+             Handler.call(fn _ -> {:error, "bar"} end, ip)
   end
 
-  test "#handle returns a new IP", %{ip: ip} do
-    new_ip = Handler.handle(fn _, _, ip -> IP.set_context(ip, :foo, :bar) end, ip)
+  test "#call returns a new IP", %{ip: ip} do
+    new_ip = Handler.call(fn _, _, ip -> IP.set_context(ip, :foo, :bar) end, ip)
     assert %IP{context: %{foo: :bar}} = new_ip
   end
 
-  test "#handle raises an error if the new IP ref doesn't match", %{ip: %IP{} = ip} do
+  test "#call raises an error if the new IP ref doesn't match", %{ip: %IP{} = ip} do
     assert_raise Pipette.Error.InvalidIP, "IP.ref mismatch", fn ->
-      Handler.handle(fn _ -> IP.new("foo") end, ip)
+      Handler.call(fn _ -> IP.new("foo") end, ip)
     end
   end
 

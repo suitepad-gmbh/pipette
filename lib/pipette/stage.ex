@@ -17,7 +17,7 @@ defmodule Pipette.Stage do
   end
 
   defp process_ip(%IP{} = ip, %__MODULE__{handler: handler} = stage) do
-    Pipette.Handler.handle(handler, ip)
+    Pipette.Handler.call(handler, ip)
   rescue
     error ->
       message = Exception.message(error)

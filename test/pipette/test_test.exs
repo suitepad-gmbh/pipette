@@ -10,7 +10,7 @@ defmodule Pipette.TestTest do
     defstruct handler: {__MODULE__, :add_one}
 
     def handle_cast(%Pipette.IP{} = ip, %__MODULE__{handler: handler} = stage) do
-      new_ip = Pipette.Handler.handle(handler, ip)
+      new_ip = Pipette.Handler.call(handler, ip)
       {:noreply, [new_ip], stage}
     end
 

@@ -8,6 +8,12 @@ defmodule Pipette.Handler do
   @callback call(value :: any, args :: list(any), ip :: IP.t()) :: return_t
   @optional_callbacks call: 0, call: 1, call: 2, call: 3
 
+  @handler Application.get_env(:pipette, :handler, Pipette.Handler)
+
+  def call(handler, ip) do
+    @handler.handle(handler, ip)
+  end
+
   def handle(handler, %IP{ref: ref} = ip) do
     case perform(handler, ip) do
       %IP{ref: ^ref} = ip -> ip
