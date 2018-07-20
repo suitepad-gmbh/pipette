@@ -16,7 +16,7 @@ defmodule Pipette.Stage.Producer do
   def handle_demand(demand, %__MODULE__{handler: handler} = stage) when demand > 0 do
     ips =
       Enum.map(1..demand, fn _ ->
-        Pipette.Handler.handle(handler, IP.new(nil))
+        Pipette.Handler.call(handler, IP.new(nil))
       end)
 
     {:noreply, ips, stage}

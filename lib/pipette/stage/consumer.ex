@@ -13,7 +13,7 @@ defmodule Pipette.Stage.Consumer do
   end
 
   def handle_events([ip], _from, %__MODULE__{handler: handler} = stage) do
-    Pipette.Handler.handle(handler, ip)
+    Pipette.Handler.call(handler, ip)
     {:noreply, [], stage}
   end
 end
