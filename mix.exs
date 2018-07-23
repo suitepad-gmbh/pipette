@@ -8,7 +8,11 @@ defmodule Pipette.MixProject do
       elixir: "~> 1.6",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      docs: docs()
+      docs: docs(),
+      package: package(),
+      name: "Pipette",
+      description: "Pipette is a flow-based programming (FBP) framework for Elixir.",
+      source_url: "https://github.com/suitepad-gmbh/pipette",
     ]
   end
 
@@ -47,6 +51,24 @@ defmodule Pipette.MixProject do
         "README.md": [title: "README"],
         "examples/google_bot_verification.md": [title: "Example: Google Bot Verification"],
       ]
+    ]
+  end
+
+  defp package do
+    [
+      name: "pipette",
+      files: [
+        "lib",
+        "config",
+        "mix.exs",
+        "README*",
+        "LICENSE*"
+      ],
+      licenses: ["MIT"],
+      maintainers: ["Lukas Rieder", "Mario Olivio Flores", "Paul Spieker", "Hildebrando Rueda"],
+      links: %{
+        "Github": "https://github.com/suitepad-gmbh/pipette"
+      }
     ]
   end
 end
