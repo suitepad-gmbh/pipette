@@ -62,7 +62,9 @@ defmodule Pipette.MixProject do
         "config",
         "mix.exs",
         "README*",
-        "LICENSE*"
+        "LICENSE*",
+        "guides",
+        "examples/*.md"
       ],
       licenses: ["MIT"],
       maintainers: ["Lukas Rieder", "Mario Olivio Flores", "Paul Spieker", "Hildebrando Rueda"],
