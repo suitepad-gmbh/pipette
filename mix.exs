@@ -25,7 +25,7 @@ defmodule Pipette.MixProject do
   defp deps do
     [
       # gen_stage are Producer and consumer pipelines with back-pressure control
-      {:gen_stage, "~> 0.13"},
+      {:gen_stage, "~> 0.14"},
       # HTTPoison is used to implement some test examples
       {:httpoison, "~> 1.0", only: :test},
       # jason is used to implement some test examples
