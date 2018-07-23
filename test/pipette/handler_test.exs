@@ -5,28 +5,20 @@ defmodule Pipette.HandlerTest do
   alias Pipette.Handler
 
   defmodule TestModule0 do
-    @behaviour Pipette.Handler
-
     def call(), do: "call/0"
     def run(), do: "run/0"
   end
 
   defmodule TestModule1 do
-    @behaviour Pipette.Handler
-
     def call(value), do: "call/1 (#{value})"
     def run(value), do: "run/1 (#{value})"
   end
 
   defmodule TestModule2 do
-    @behaviour Pipette.Handler
-
     def call(value, args), do: "call/2 (#{value}, #{inspect(args)})"
   end
 
   defmodule TestModule3 do
-    @behaviour Pipette.Handler
-
     def call(value, args, %IP{}), do: "call/3 (#{value}, #{inspect(args)}, IP)"
     def run(value, args, %IP{}), do: "run/3 (#{value}, #{inspect(args)}, IP)"
   end

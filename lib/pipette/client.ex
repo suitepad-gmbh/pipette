@@ -29,9 +29,6 @@ defmodule Pipette.Client do
   """
   use GenServer
 
-  @doc false
-  def child_spec(arg)
-
   require Logger
 
   defmodule TimeoutError do

@@ -63,7 +63,7 @@ defmodule Pipette.Test do
   Pushes a message on a stage (default: `:IN`).
   """
   def push(controller_pid, value, inlet \\ :IN) when is_pid(controller_pid) do
-    Pipette.Test.Controller.push(controller_pid, value)
+    Pipette.Test.Controller.push(controller_pid, value, inlet)
   end
 
   @doc """
