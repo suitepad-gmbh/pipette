@@ -9,6 +9,8 @@ defmodule Pipette.Controller do
 
   alias Pipette.Recipe
 
+  @start_stage Application.get_env(:pipette, :start_stage, {__MODULE__, :start_stage, []})
+
   @doc false
   def child_spec(recipe) do
     %{
@@ -80,10 +82,15 @@ defmodule Pipette.Controller do
 
   defp start_stages(%Recipe{stages: stages}) do
     Enum.reduce(stages, %{}, fn {stage_id, stage}, acc ->
-      {:ok, pid} = stage.__struct__.start_link(stage)
+      {module, func, args} = @start_stage
+      {:ok, pid} = apply(module, func, [stage, args])
       Process.link(pid)
       Map.put(acc, stage_id, pid)
     end)
+  end
+
+  def start_stage(%{__struct__: module} = stage, _args) when is_atom(module) do
+    module.start_link(stage)
   end
 
   defp establish(%{recipe: %Recipe{subscriptions: subscriptions}} = state) do
