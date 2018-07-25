@@ -89,6 +89,48 @@ defmodule Pipette.Controller do
     end)
   end
 
+  @doc """
+  It starts a given stage and returns and `{:ok, pid}` tuple. The given stage
+  must implement a `start_link/1` function, starting itself and also returning
+  the `{:ok, pid}` tuple.
+
+  In order to change the stages before starting them, the
+  `:pipette, :start_stage` configuration can be changed, to point to a custom
+  implementation.
+
+  Example
+
+      config :pipette, start_stage: {FooModule, :start_stage, bar: "baz"}
+
+      defmodule FooModule do
+        def start_stage(%{__struct__: module} = stage, args) when is_atom(module) do
+          stage_conf(stage)
+          |> Pipette.Controller.start_stage(args)
+        end
+
+        defp stage_conf({:cfg, key}), do: Application.get_env(:my_app, key)
+
+        defp stage_conf(%{__struct__: module} = struct) when is_atom(module) do
+          Map.from_struct(struct)
+          |> stage_conf()
+          |> (&struct(module, &1)).()
+        end
+
+        defp stage_conf(%{} = map) do
+          Enum.map(map, fn {key, value} -> {key, stage_conf(value)} end)
+          |> Map.new()
+        end
+
+        defp stage_conf(tuple) when is_tuple(tuple) do
+          Tuple.to_list(tuple)
+          |> stage_conf()
+          |> List.to_tuple()
+        end
+
+        defp stage_conf(list) when is_list(list), do: Enum.map(list, &stage_conf(&1))
+        defp stage_conf(value), do: value
+      end
+  """
   def start_stage(%{__struct__: module} = stage, _args) when is_atom(module) do
     module.start_link(stage)
   end

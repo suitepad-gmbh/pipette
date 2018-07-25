@@ -37,11 +37,14 @@ defmodule Pipette.Handler do
 
   alias Pipette.IP
 
-  @type t :: fun()
-           | module()
-           | {module(), keyword()}
-           | {module(), atom()}
-           | {module(), atom(), keyword()}
+  require Logger
+
+  @type t ::
+          fun()
+          | module()
+          | {module(), keyword()}
+          | {module(), atom()}
+          | {module(), atom(), keyword()}
 
   @typedoc """
   The expected return type from any handler call.
@@ -120,6 +123,9 @@ defmodule Pipette.Handler do
 
       function_exported?(module, function_name, 0) ->
         apply(module, function_name, [])
+
+      true ->
+        raise "Handler function not found (module: #{module}, function: #{function_name})"
     end
   end
 end
