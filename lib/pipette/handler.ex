@@ -111,6 +111,8 @@ defmodule Pipette.Handler do
   @doc false
   def perform({module, function_name, args}, %IP{value: value} = ip)
       when is_atom(module) and is_atom(function_name) do
+    {:module, ^module} = Code.ensure_loaded(module)
+
     cond do
       function_exported?(module, function_name, 3) ->
         apply(module, function_name, [value, args, ip])
