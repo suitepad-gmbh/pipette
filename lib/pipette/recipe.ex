@@ -50,6 +50,7 @@ defmodule Pipette.Recipe do
         __MODULE__.__info__(:attributes)
         |> Keyword.get_values(:stage)
         |> List.flatten()
+        |> complete_stage_definition()
         |> Enum.into(%{})
       end
 
@@ -72,6 +73,15 @@ defmodule Pipette.Recipe do
       def child_spec(_opts \\ []), do: Pipette.Controller.child_spec(__MODULE__.recipe())
 
       defoverridable process_name: 0, recipe: 0, stages: 0, subscriptions: 0
+
+      defp complete_stage_definition(stages) do
+        default_stage = Application.get_env(:pipette, :default_stage, Pipette.Stage)
+
+        Enum.map(stages, fn
+          {key, %{__struct__: _} = value} -> {key, value}
+          {key, handler} -> {key, struct(default_stage, %{handler: handler})}
+        end)
+      end
     end
   end
 
@@ -81,6 +91,7 @@ defmodule Pipette.Recipe do
   defstruct id: nil,
             stages: %{},
             subscriptions: []
+
   @typedoc """
   An instance of a recipe.
   """
@@ -88,10 +99,11 @@ defmodule Pipette.Recipe do
 
   @type stages_t :: %{atom => struct}
 
-  @type subscriptions_t :: [{from :: atom, to :: atom} | {from :: atom, to :: atom, route :: atom}]
+  @type subscriptions_t :: [
+          {from :: atom, to :: atom} | {from :: atom, to :: atom, route :: atom}
+        ]
 
-
-  @spec new(%{stages: stages_t, subscriptions: subscriptions_t}) :: Pipette.Recipe.t
+  @spec new(%{stages: stages_t, subscriptions: subscriptions_t}) :: Pipette.Recipe.t()
   @doc """
   Returns a Pipette recipe struct, and provides defaults for `:IN` and `:OUT`.
   """
@@ -108,7 +120,8 @@ defmodule Pipette.Recipe do
     }
   end
 
-  @spec start_controller(%{stages: stages_t, subscriptions: subscriptions_t} | Pipette.Recipe.t) :: pid
+  @spec start_controller(%{stages: stages_t, subscriptions: subscriptions_t} | Pipette.Recipe.t()) ::
+          pid
   @doc """
   Start a recipe controller.
 

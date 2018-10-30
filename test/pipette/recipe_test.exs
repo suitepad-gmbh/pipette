@@ -59,6 +59,17 @@ defmodule Pipette.RecipeTest do
     end
   end
 
+  defmodule CompleteStageDefinition do
+    use Pipette.Recipe
+
+    @stage hello: &"Hello #{&1}"
+    @stage first: {List, :first}
+  end
+
+  defmodule MyCustomStage do
+    defstruct handler: nil
+  end
+
   test "#start_link starts a controlled recipe" do
     {:ok, pid} = FooToBarRecipe.start_link()
     Process.unlink(pid)
@@ -97,5 +108,19 @@ defmodule Pipette.RecipeTest do
 
   test "#recipe is overridable" do
     assert run_recipe(OverrideRecipe, 1) == 2
+  end
+
+  test "#stages automatically completes stage definitions" do
+    stages = CompleteStageDefinition.stages()
+    assert %Pipette.Stage{handler: _} = Map.get(stages, :hello)
+    assert %Pipette.Stage{handler: {List, :first}} = Map.get(stages, :first)
+  end
+
+  test "stage auto completion can be configured with a custom stage" do
+    Application.put_env(:pipette, :default_stage, MyCustomStage)
+    stages = CompleteStageDefinition.stages()
+    Application.delete_env(:pipette, :default_stage)
+    assert %MyCustomStage{handler: _} = Map.get(stages, :hello)
+    assert %MyCustomStage{handler: {List, :first}} = Map.get(stages, :first)
   end
 end
