@@ -62,7 +62,8 @@ defmodule Pipette.Client do
     {:ok, controller}
   end
 
-  @spec call(pid, ip_or_value :: term | Pipette.IP.t(), timeout :: integer | :infinity) :: {route :: atom, value :: term}
+  @spec call(pid, ip_or_value :: term | Pipette.IP.t(), timeout :: integer | :infinity) ::
+          {route :: atom, value :: term}
   @doc """
   Call the recipe of this client on `:IN` and wait for one message on `:OUT`.
   """
@@ -112,7 +113,7 @@ defmodule Pipette.Client do
     call!(pid, IP.new(value), timeout)
   end
 
-  @spec push(pid(), value :: term | Pipette.IP.t, keyword) :: term
+  @spec push(pid(), value :: term | Pipette.IP.t(), keyword) :: term
   @doc """
   Push a message onto a stage (default: `:IN`).
   """
@@ -171,7 +172,7 @@ defmodule Pipette.Client do
         await_response(ip.ref, monitor, timeout)
       end)
 
-    {:reply, Task.await(task), controller}
+    {:reply, Task.await(task, :infinity), controller}
   end
 
   defp await_response(ref, monitor, timeout) do
@@ -185,7 +186,7 @@ defmodule Pipette.Client do
         {:error, %Error{message: "consumer went down while waiting for return on OUT"}}
 
       msg ->
-        Logger.warn("unexpected message on Client.await_response/3: #{inspect msg}")
+        Logger.warn("unexpected message on Client.await_response/3: #{inspect(msg)}")
         await_response(ref, monitor, timeout)
     after
       timeout ->
