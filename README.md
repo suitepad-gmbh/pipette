@@ -23,8 +23,8 @@ data processing systems.
 ## Documentation
 
 * [Documentation](https://hexdocs.pm/pipette/Pipette.html#content)
-* [API Reference](https://hexdocs.pm/pipette/api-reference.md#content)
-* [Example: Google Bot Verification](https://hexdocs.pm/pipette/google_bot_verification.md#content)
+* [API Reference](https://hexdocs.pm/pipette/api-reference.html#content)
+* [Example: Google Bot Verification](https://hexdocs.pm/pipette/google_bot_verification.html#content)
 
 ## Installation
 
