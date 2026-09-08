@@ -57,9 +57,7 @@ defmodule Pipette.Controller do
 
   @doc false
   def handle_call({:get_stage_pids, stage_ids}, _from, %{stage_pids: stage_pids} = state) do
-    pids =
-      Map.take(stage_pids, stage_ids)
-      |> Map.values()
+    pids = Enum.map(stage_ids, &Map.get(stage_pids, &1))
 
     {:reply, pids, state}
   end
