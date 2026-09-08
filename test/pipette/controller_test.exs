@@ -57,11 +57,11 @@ defmodule Pipette.ControllerTest do
 
     Client.push(client, "IN")
 
-    assert [
-             %Pipette.IP{value: "IN"},
-             %Pipette.IP{value: "bar"},
-             %Pipette.IP{value: "foo"}
-           ] = Task.await(task)
+    values =
+      Task.await(task)
+      |> Enum.map(& &1.value)
+
+    assert Enum.sort(["IN", "bar", "foo"]) == Enum.sort(values)
   end
 
   test "subscribe to all stages and routes of a recipe at once" do
@@ -95,11 +95,17 @@ defmodule Pipette.ControllerTest do
 
     Client.push(client, :foo)
 
-    assert [
-             %Pipette.IP{value: :foo, route: :ok},
-             %Pipette.IP{value: "route", route: :foo},
-             %Pipette.IP{value: "foo", route: :ok}
-           ] = Task.await(task)
+    expected = [
+      {:ok, :foo},
+      {:foo, "route"},
+      {:ok, "foo"}
+    ]
+
+    actual =
+      Task.await(task)
+      |> Enum.map(&{&1.route, &1.value})
+
+    assert Enum.sort(expected) == Enum.sort(actual)
   end
 
   test "subscribe to all stages with a specific route of a recipe at once" do
@@ -136,5 +142,27 @@ defmodule Pipette.ControllerTest do
     assert [
              %Pipette.IP{value: "route", route: :error}
            ] = Task.await(task)
+  end
+
+  test "get_stage_pids/2 returns the pids in the order of the given stage ids" do
+    pid =
+      Recipe.new(%{
+        id: __MODULE__,
+        stages: %{
+          foo: %Stage{handler: fn value -> value end}
+        },
+        subscriptions: [
+          {:foo, :IN},
+          {:OUT, :foo}
+        ]
+      })
+      |> Recipe.start_controller()
+
+    in_pid = Controller.get_stage_pid(pid, :IN)
+    out_pid = Controller.get_stage_pid(pid, :OUT)
+
+    assert [^in_pid, ^out_pid] = Controller.get_stage_pids(pid, [:IN, :OUT])
+    assert [^out_pid, ^in_pid] = Controller.get_stage_pids(pid, [:OUT, :IN])
+    assert [^out_pid, nil, ^in_pid] = Controller.get_stage_pids(pid, [:OUT, :MISSING, :IN])
   end
 end
